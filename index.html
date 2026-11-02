@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070d1b">
+  <meta name="description" content="Don't Play This Game — a dangerously addictive single-player sci-fi tower defense game.">
+  <title>Don't Play This Game — Tower Defense</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Don't Play This Game home">
+        <span class="brand-mark"><span>!</span></span>
+        <span class="brand-text">DON'T PLAY <strong>THIS GAME</strong><small>AN UNWISE USE OF YOUR TIME</small></span>
+      </a>
+      <div class="header-right">
+        <span class="header-status"><i></i> SYSTEM ONLINE</span>
+        <button id="soundButton" class="icon-button" type="button" title="Toggle sound" aria-label="Toggle sound">♫</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="menuScreen" class="menu-screen">
+        <div class="menu-copy">
+          <div class="eyebrow"><span class="status-dot"></span> INCOMING TRANSMISSION / 001</div>
+          <h1>DON'T.<br><em>PLAY.</em><br>THIS GAME<span class="period">.</span></h1>
+          <p class="intro">One reactor. An entire enemy armada. An unreasonable number of turrets. <strong>You were warned.</strong></p>
+          <div class="menu-actions">
+            <button id="startButton" class="btn btn-primary btn-big" type="button"><span>▶</span> DEFEND THE REACTOR <span class="btn-arrow">↗</span></button>
+            <span class="tiny-caveat">FREE TO PLAY. EXPENSIVE IN FREE TIME.</span>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="setup-heading"><span>01 / CHOOSE YOUR BATTLEFIELD</span><span>3 SECTORS</span></div>
+          <div id="mapCards" class="map-cards" role="group" aria-label="Choose a map">
+            <button class="map-card selected" data-map="0" type="button"><span class="map-symbol">◈</span><span><b>NEON CROSSING</b><small>Winding industrial lanes</small></span></button>
+            <button class="map-card" data-map="1" type="button"><span class="map-symbol">⌁</span><span><b>REDLINE CANYON</b><small>Long, lethal corridors</small></span></button>
+            <button class="map-card" data-map="2" type="button"><span class="map-symbol">✳</span><span><b>GHOST CIRCUIT</b><small>Twisted reactor passages</small></span></button>
+          </div>
+          <div class="setup-heading difficulty-heading"><span>02 / SET THE PAIN LEVEL</span><span>GOOD LUCK</span></div>
+          <div id="difficultyOptions" class="segmented" role="group" aria-label="Choose difficulty">
+            <button type="button" data-difficulty="0" class="active">NORMAL</button>
+            <button type="button" data-difficulty="1">HARD</button>
+            <button type="button" data-difficulty="2">INSANE</button>
+          </div>
+          <div class="best-record"><span>YOUR PERSONAL BEST</span><strong id="menuBest">WAVE 0</strong><span id="menuBestScore">0 POINTS</span></div>
+        </div>
+        <div class="menu-art" aria-hidden="true">
+          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
+          <div class="radar-line"></div>
+          <div class="reactor-icon"><div class="reactor-center"><span>!</span></div><div class="reactor-ring"></div></div>
+          <div class="floating-tag top-tag"><span class="tag-led"></span> SECTOR ALERT <b>LEVEL: CRITICAL</b></div>
+          <div class="floating-tag bottom-tag">HOSTILES DETECTED <strong>∞</strong></div>
+          <div class="crosshair crosshair-a">+</div><div class="crosshair crosshair-b">+</div>
+          <div class="art-coordinate">SYS_041 / EST. 2049<br>NO REFUNDS ON LOST TIME</div>
+        </div>
+      </section>
+
+      <section id="gameScreen" class="game-screen hidden">
+        <div class="game-topline">
+          <div class="sector-title"><span class="eyebrow">SECTOR DEFENSE // ACTIVE</span><strong id="sectorName">NEON CROSSING</strong></div>
+          <div class="stat-group">
+            <div class="stat"><small>CREDITS</small><strong class="gold" id="creditsValue">420</strong></div>
+            <div class="stat"><small>REACTOR</small><strong id="livesValue">25 <span class="stat-suffix">HP</span></strong></div>
+            <div class="stat"><small>WAVE</small><strong id="waveValue">0 <span class="stat-suffix">/ 20</span></strong></div>
+            <div class="stat"><small>SCORE</small><strong id="scoreValue">0</strong></div>
+          </div>
+          <div class="game-actions">
+            <button id="speedButton" class="small-control" type="button" title="Change game speed">1×</button>
+            <button id="pauseButton" class="small-control" type="button" title="Pause game">Ⅱ</button>
+            <button id="menuButton" class="small-control exit-control" type="button" title="Return to main menu">⌂</button>
+          </div>
+        </div>
+        <div class="game-layout">
+          <div class="battle-column">
+            <div class="battle-frame">
+              <div class="battle-topbar"><span><i></i> <span id="battleStatus">AWAITING DEPLOYMENT</span></span><span id="battleIndicator">THREAT: LOW</span></div>
+              <div id="canvasContainer" class="canvas-container">
+                <canvas id="gameCanvas" width="800" height="500" aria-label="Tower defense battlefield"></canvas>
+                <div id="canvasHint" class="canvas-hint">SELECT A TOWER, THEN TAP AN OPEN TILE</div>
+                <div id="floatingMessage" class="floating-message"></div>
+              </div>
+              <div class="battle-footer"><span>◈ <span id="footerMap">NEON CROSSING</span></span><span id="waveProgress">READY FOR WAVE 01</span><span>DEFEND THE CORE ◆</span></div>
+            </div>
+            <div class="bottom-controls">
+              <div class="wave-callout"><span id="waveTag">NEXT UP / WAVE 01</span><strong id="waveDescription">Scout drones approaching</strong></div>
+              <button id="waveButton" class="btn btn-primary wave-button" type="button">▶ START WAVE 01</button>
+            </div>
+            <div class="abilities-area">
+              <div class="section-label"><span>TACTICAL ABILITIES</span><small>USE THEM OR LOSE THEM</small></div>
+              <div class="abilities">
+                <button id="abilityOverdrive" type="button" class="ability" data-ability="overdrive"><span class="ability-icon overdrive">⚡</span><span><b>OVERDRIVE</b><small>Double fire rate · 8s</small></span><span class="ability-cooldown" id="cdOverdrive">READY</span></button>
+                <button id="abilityEmp" type="button" class="ability" data-ability="emp"><span class="ability-icon emp">❄</span><span><b>EMP BLAST</b><small>Freeze all enemies · 3s</small></span><span class="ability-cooldown" id="cdEmp">READY</span></button>
+                <button id="abilityStrike" type="button" class="ability" data-ability="strike"><span class="ability-icon strike">✦</span><span><b>ORBITAL STRIKE</b><small>Tap anywhere to obliterate</small></span><span class="ability-cooldown" id="cdStrike">READY</span></button>
+              </div>
+            </div>
+          </div>
+          <aside class="side-panel">
+            <div class="side-header"><span>ARMORY</span><span class="panel-indicator">06 DEPLOYABLE UNITS</span></div>
+            <div class="sidebar-section-heading"><span>BUILD TOWERS</span><small>SELECT → PLACE ON GRID</small></div>
+            <div id="towerList" class="tower-list"></div>
+            <div class="sidebar-divider"></div>
+            <div id="towerDetails" class="tower-details">
+              <div class="details-empty"><span class="details-empty-icon">◎</span><b>NO TOWER SELECTED</b><p>Select a deployed tower to view its upgrades, priority, and sell value.</p></div>
+            </div>
+            <div class="keyboard-hint"><span>HOTKEYS</span> 1–6 BUILD · SPACE PAUSE · F SPEED · ESC CANCEL</div>
+          </aside>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer"><span>DON'T PLAY THIS GAME <span class="muted">© 2026</span></span><span>MADE TO BE PLAYED. NAMED TO BE IGNORED.</span></footer>
+  </div>
+  <div id="modalRoot" class="modal-root hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
+  <script src="game.js" defer></script>
+</body>
+</html>
