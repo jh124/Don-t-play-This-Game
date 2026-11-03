@@ -258,6 +258,7 @@ function updateDetails(){
     return;
   }
   const t=state.selectedTower,def=TOWER_BY_ID[t.id],stats=towerStats(t);
+  state.detailSignature=[t.id,t.level,t.specialization,t.priority,t.spent,state.credits>=upgradeCost(t),padAt(t.c,t.r)?.type||""].join("|");
   const cost=upgradeCost(t),max=t.level>=4;
   const dmg=t.id==="mint"?"—":stats.damage;
   const range=t.id==="mint"?"—":Math.round(stats.range);
@@ -699,7 +700,14 @@ function update(dt){
   }
   updateEffects(dt);
   state.hudElapsed+=dt;
-  if(state.hudElapsed>.14){state.hudElapsed=0;syncHUD();if(state.selectedTower)updateDetails();}
+  if(state.hudElapsed>.14){
+    state.hudElapsed=0;syncHUD();
+    if(state.selectedTower){
+      const t=state.selectedTower;
+      const signature=[t.id,t.level,t.specialization,t.priority,t.spent,state.credits>=upgradeCost(t),padAt(t.c,t.r)?.type||""].join("|");
+      if(signature!==state.detailSignature)updateDetails();
+    }
+  }
 }
 function completeWave(){
   state.waveActive=false;state.projectiles=[];
@@ -887,6 +895,9 @@ function initControls(){
     if(ev.code==="Escape"){state.selectedBuild=null;state.selectedTower=null;state.targetingStrike=false;refreshTowerList();updateDetails();syncHUD();}
     else if(ev.code==="Space")togglePause();
     else if(ev.key.toLowerCase()==="f")$("speedButton").click();
+    else if(ev.key.toLowerCase()==="q")useAbility("overdrive");
+    else if(ev.key.toLowerCase()==="e")useAbility("emp");
+    else if(ev.key.toLowerCase()==="r")useAbility("strike");
     else if(ev.code==="Enter"&&!state.waveActive)startWave();
     else if(/^[1-6]$/.test(ev.key))chooseBuild(TOWERS[Number(ev.key)-1].id);
   });
