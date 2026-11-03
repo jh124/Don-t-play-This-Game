@@ -131,7 +131,7 @@ function newState(){
     spawning:[],spawnElapsed:0,spawnIndex:0,time:0,hudElapsed:0,
     paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,runSeed:Math.random(),nextWaveIn:chosenMode==="arcade"?10:0,
     targetingStrike:false,overdriveUntil:0,shake:0,
-    gun:{active:false,down:false,aim:{x:400,y:250},heat:0,overheated:false,cooldown:0,hits:0,shots:0},
+    gun:{active:false,down:false,aim:{x:400,y:250},heat:0,overheated:false,cooldown:0,hits:0,shots:0},contract:null,
     cooldowns:{overdrive:0,emp:0,strike:0},
     perks:{power:0,rapid:0,range:0,cooldown:0},modal:false
   };
@@ -218,6 +218,7 @@ function startGame(){
   $("gameScreen").classList.remove("hidden");
   $("gunPanel").classList.toggle("hidden",!isArcade());
   $("dropHint").classList.toggle("hidden",!isArcade());
+  $("contractPanel").classList.toggle("hidden",!isArcade());
   $("canvasHint").textContent=isArcade()?"BUILD TOWERS, THEN TAP DIRECT CONTROL TO SHOOT":"SELECT A TOWER, THEN TAP AN OPEN TILE";
   $("sectorName").textContent=MAPS[state.mapIndex].name;
   $("footerMap").textContent=MAPS[state.mapIndex].name;
@@ -381,6 +382,10 @@ function syncHUD(){
   $("livesValue").style.color=state.lives<=8?"#ff7185":"";
   $("waveValue").innerHTML=state.wave+' <span class="stat-suffix">/ '+(state.endless?"∞":campaignLength())+'</span>';
   $("scoreValue").textContent=money(state.score);
+  const contract=state.contract;
+  $("contractTitle").textContent=contract?contract.label:"ASSIGNMENT PENDING";
+  $("contractProgress").textContent=contract?(contract.done?"✓ +"+contract.reward+"¢":contract.progress+" / "+contract.goal):"—";
+  $("contractPanel").classList.toggle("complete",!!contract?.done);
   const planned=state.spawning.length;
   const left=state.enemies.length+planned-state.spawnIndex;
   const complete=state.waveActive?clamp(1-left/Math.max(1,planned),0,1):0;
@@ -502,6 +507,7 @@ function startWave(){
   state.waveStartLives=state.lives;
   state.combo=0;
   state.spawning=wavePlan(state.wave);
+  if(isArcade())assignContract(state.wave);
   state.spawnElapsed=0;state.spawnIndex=0;state.waveActive=true;
   state.selectedBuild=null;state.targetingStrike=false;
   state.enemies=state.enemies.filter(e=>!e.dead);
@@ -562,6 +568,7 @@ function killEnemy(e){
   state.credits+=e.reward;
   const mult=1+Math.min(4,Math.floor(state.combo/5)*.5);
   state.score+=Math.round(e.reward*10*mult);state.kills++;
+  progressContract("chain",state.combo);
   maybeDropSupply(e);
   if(state.kills===1)unlockAward("first");
   if(state.combo>=10)unlockAward("combo");
@@ -752,6 +759,31 @@ function updateEffects(dt){
   state.shake=Math.max(0,state.shake-34*dt);
 }
 
+
+function assignContract(wave){
+  const kind=bossWave(wave)?"boss":wave%6===0?"perfect":wave%4===1?"manual":wave%4===2?"chain":"supplies";
+  const goals={
+    manual:{label:"LAND ACCURATE RAILGUN HITS",goal:5+Math.floor(wave/3)},
+    chain:{label:"BUILD A KILL CHAIN",goal:Math.min(13,6+wave)},
+    supplies:{label:"INTERCEPT SUPPLY CRATES",goal:wave>=7?2:1},
+    boss:{label:"HIT THE TITAN WITH YOUR RAILGUN",goal:3},
+    perfect:{label:"KEEP THE REACTOR UNTOUCHED",goal:1}
+  };
+  state.contract={type:kind,label:goals[kind].label,goal:goals[kind].goal,
+    progress:0,done:false,reward:65+wave*13};
+}
+function progressContract(type,amount){
+  if(!isArcade()||!state.contract||state.contract.done||state.contract.type!==type)return;
+  const c=state.contract;
+  c.progress=type==="chain"?Math.max(c.progress,amount):Math.min(c.goal,c.progress+amount);
+  if(c.progress<c.goal)return;
+  c.done=true;state.credits+=c.reward;state.score+=c.reward*5;
+  spawnBurst(400,120,"#d6fa70",33,170);
+  showToast("✦ CONTRACT COMPLETE +"+c.reward+"¢");
+  playSound(930,.18,"triangle",.045);
+  syncHUD();
+}
+
 const SUPPLY_TYPES={
   credits:{color:"#f9d977",icon:"¢",name:"CREDIT CRATE"},
   repair:{color:"#83fca4",icon:"+",name:"REACTOR REPAIR"},
@@ -772,6 +804,7 @@ function collectSupply(x,y){
   const index=state.drops.findIndex(d=>Math.hypot(d.x-x,d.y-y)<32);
   if(index<0)return false;
   const d=state.drops.splice(index,1)[0],kind=SUPPLY_TYPES[d.type];
+  progressContract("supplies",1);
   if(d.type==="credits")state.credits+=100+state.wave*7;
   if(d.type==="repair")state.lives=Math.min(state.maxLives,state.lives+3);
   if(d.type==="coolant"){state.gun.heat=0;state.gun.overheated=false;state.gun.cooldown=0;}
@@ -825,6 +858,8 @@ function shootGun(){
     const center=within<target.r+8;
     const damage=(36+state.wave*4)*(center?1.8:1);
     damageEnemy(target,damage,"gun");
+    progressContract("manual",1);
+    if(target.type==="boss")progressContract("boss",1);
     if(center)state.score+=18;
     g.hits++;
     if(center)state.floaters.push({x:target.x,y:target.y-22,text:"CRIT!",color:"#d6fa70",life:.7});
@@ -944,6 +979,7 @@ function completeWave(){
   const base=Math.round(45+state.wave*9);
   const passive=state.towers.filter(t=>t.id==="mint").reduce((sum,t)=>sum+towerStats(t).income,0);
   const perfect=state.lives===state.waveStartLives;
+  if(perfect)progressContract("perfect",1);
   const perfectBonus=perfect?35+state.wave*6:0;
   if(perfect){state.perfectWaves++;state.score+=(200+state.wave*40);if(state.perfectWaves>=5)unlockAward("perfect");}
   state.credits+=base+passive+perfectBonus;state.score+=(base+passive)*2;
