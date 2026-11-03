@@ -149,6 +149,39 @@ function playSound(freq=440,duration=.06,type="sine",gain=.018){
     o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+duration+.01);
   }catch(_){}
 }
+
+let musicClock=0,musicStep=0;
+function playMusicVoice(freq,duration=.2,gain=.003,type="triangle"){
+  if(!soundOn||!audio||audio.state!=="running"||!state||state.paused||state.modal)return;
+  try{
+    const o=audio.createOscillator(),g=audio.createGain();
+    o.type=type;
+    o.frequency.setValueAtTime(freq,audio.currentTime);
+    g.gain.setValueAtTime(.00001,audio.currentTime);
+    g.gain.linearRampToValueAtTime(gain,audio.currentTime+.015);
+    g.gain.exponentialRampToValueAtTime(.00001,audio.currentTime+duration);
+    o.connect(g).connect(audio.destination);
+    o.start();o.stop(audio.currentTime+duration+.03);
+  }catch(_){}
+}
+function tickSoundtrack(dt){
+  if(!state||!state.waveActive||state.paused||state.modal||!soundOn){
+    musicClock=0;musicStep=0;return;
+  }
+  musicClock-=dt;
+  if(musicClock>0)return;
+  musicClock=.285;
+  const step=musicStep++%16;
+  const root=[73.42,98.0,116.54,87.31][Math.floor((musicStep%64)/16)];
+  const boss=state.wave%5===0;
+  if(step%4===0)playMusicVoice(root, .24,boss?.007:.0045,"triangle");
+  if(step===3||step===7||step===11||step===15){
+    const accent=[1.5,1.333,1.5,1.777][Math.floor(step/4)];
+    playMusicVoice(root*accent*2,.19,boss?.0048:.0028,"sine");
+  }
+  if(step%2===1)playMusicVoice(260+(step%4)*35,.025,boss?.0019:.0011,"square");
+  if(boss&&(step===4||step===12))playMusicVoice(root/2,.33,.0055,"sawtooth");
+}
 function saveBest(){
   if(!state)return;
   if(state.wave>best.wave || (state.wave===best.wave&&state.score>best.score)){
@@ -1228,7 +1261,7 @@ function draw(){
 function loop(timestamp){
   const elapsed=lastFrame?Math.min(.055,(timestamp-lastFrame)/1000):0;
   lastFrame=timestamp;ambientTime+=elapsed;
-  if(state){update(elapsed*state.speed);draw();}
+  if(state){update(elapsed*state.speed);tickSoundtrack(elapsed);draw();}
   requestAnimationFrame(loop);
 }
 
