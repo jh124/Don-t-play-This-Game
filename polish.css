@@ -76,3 +76,19 @@ body{background:radial-gradient(ellipse 55% 35% at 74% 4%,#1c3242 0,transparent 
   .ability-cooldown{font-size:8px}
   .spec-grid button{min-height:90px}
 }
+
+.dossier-button{width:100%;max-width:565px;display:flex;align-items:center;gap:12px;margin-top:12px;background:#1a2c38;border:1px solid #3c5465;border-radius:8px;padding:12px 14px;color:#bad8c7;transition:background .15s,border-color .15s;text-align:left}
+.dossier-button:hover{background:#223b45;border-color:#d6fa70}
+.dossier-button span:first-child{font-size:10px;letter-spacing:1.1px;font-weight:900;flex:1}
+.dossier-button strong{font:800 10px var(--font);color:#d6fa70;letter-spacing:.5px}
+.dossier-button span:last-child{color:#d6fa70;font-size:18px}
+.accolades-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
+.accolade{display:flex;align-items:center;gap:10px;background:#111e30;border:1px solid #31465b;padding:10px;border-radius:7px;opacity:.45;min-height:65px}
+.accolade-earned{background:#192e37;border-color:#698b68;opacity:1}
+.accolade-icon{font-size:23px;min-width:27px;display:block;text-align:center;color:#9eadb9}
+.accolade-earned .accolade-icon{color:#d6fa70;text-shadow:0 0 15px #d6fa7040}
+.accolade>div{min-width:0;flex:1}
+.accolade b{font:900 17px/1 var(--display);display:block;color:#d5dfed}
+.accolade small{font-size:9px;line-height:1.3;display:block;margin-top:5px;color:#91a8bc}
+.accolade-state{color:#d6fa70;font-size:12px}
+@media(max-width:600px){.accolades-grid{grid-template-columns:1fr}.accolade{min-height:57px}.dossier-button{padding:10px}}
