@@ -176,13 +176,41 @@ function upgradeCost(t){
   if(t.level>=4)return 0;
   return Math.round(TOWER_BY_ID[t.id].cost*(.65+t.level*.4)/5)*5;
 }
+
+const AUGMENTS={
+  pulse:[
+    {id:"focus",name:"TARGET LOCK",desc:"Consecutive hits on the same enemy ramp up damage."},
+    {id:"ricochet",name:"RICOCHET",desc:"Every hit arcs to a nearby second enemy."}
+  ],
+  rail:[
+    {id:"breaker",name:"TITAN BREAKER",desc:"Deal 75% more damage to bosses and armored units."},
+    {id:"piercer",name:"HYPER RAIL",desc:"Pierce 4 extra enemies and extend range."}
+  ],
+  cryo:[
+    {id:"deepfreeze",name:"ABSOLUTE ZERO",desc:"Stronger slows that nearly stop enemies."},
+    {id:"brittle",name:"SHATTER POINT",desc:"Frozen enemies take 30% more damage from allies."}
+  ],
+  mortar:[
+    {id:"wildfire",name:"NAPALM ROUND",desc:"Explosions leave a damaging burn on everything hit."},
+    {id:"cluster",name:"CLUSTER BOMB",desc:"Much larger explosions, great against swarms."}
+  ],
+  tesla:[
+    {id:"overload",name:"OVERCHARGE",desc:"50% bonus damage to shields and bosses."},
+    {id:"fork",name:"CHAIN REACTION",desc:"Lightning chains to four additional enemies."}
+  ],
+  mint:[
+    {id:"compound",name:"COMPOUND YIELD",desc:"Produces 65% more credits per wave."},
+    {id:"relay",name:"TACTICAL RELAY",desc:"Nearby towers fire 18% faster."}
+  ]
+};
 function towerStats(t){
   const def=TOWER_BY_ID[t.id],lv=t.level-1;
+  const relay=state.towers.some(other=>other!==t&&other.id==="mint"&&other.specialization==="relay"&&distance(other,t)<140);
   return {
-    damage:Math.round(def.damage*(1+.42*lv+.1*lv*lv)*(1+.12*state.perks.power)),
-    range:(def.range+12*lv)*(1+.08*state.perks.range),
-    interval:def.interval*(1-.105*lv)/(1+.1*state.perks.rapid),
-    income:Math.round((24+lv*18)*(1+.08*state.perks.power))
+    damage:Math.round(def.damage*(1+.42*lv+.1*lv*lv)*(1+.12*state.perks.power)*(t.specialization==="breaker"?1.25:1)),
+    range:(def.range+12*lv)*(1+.08*state.perks.range)*(t.specialization==="piercer"?1.22:1),
+    interval:def.interval*(1-.105*lv)/(1+.1*state.perks.rapid)/(relay?1.18:1),
+    income:Math.round((24+lv*18)*(1+.08*state.perks.power)*(t.specialization==="compound"?1.65:1))
   };
 }
 function updateDetails(){
@@ -196,6 +224,9 @@ function updateDetails(){
   const dmg=t.id==="mint"?"—":stats.damage;
   const range=t.id==="mint"?"—":Math.round(stats.range);
   const rate=t.id==="mint"?"—":(1/stats.interval).toFixed(1)+"/s";
+  const choices=t.level===2?AUGMENTS[t.id]:null;
+  const spec=t.specialization?AUGMENTS[t.id].find(a=>a.id===t.specialization):null;
+  const specialHTML=choices?'<div class="spec-heading">CHOOSE A TECH BRANCH · '+cost+'¢</div><div class="spec-grid">'+choices.map(a=>'<button data-action="specialize" data-spec="'+a.id+'" '+(state.credits<cost?'disabled':'')+'><b>'+a.name+'</b><small>'+a.desc+'</small></button>').join("")+'</div>':(spec?'<div class="spec-active">✦ '+spec.name+' ACTIVE</div>':'');
   const info=t.id==="mint" ? "Produces "+stats.income+" credits at the end of every completed wave." :
     t.id==="cryo"?"Shots slow enemies by 45% for 1.8 seconds.":
     t.id==="rail"?"Beams pierce multiple targets in a straight line.":
@@ -204,8 +235,8 @@ function updateDetails(){
     "A dependable rapid-fire defense turret.";
   el.innerHTML='<div class="detail-top"><div><h3 style="color:'+def.color+'">'+def.name+'</h3><span>GRID '+String(t.c+1).padStart(2,"0")+' / '+String(t.r+1).padStart(2,"0")+'</span></div><span class="level-badge">LVL '+t.level+' / 4</span></div>'+
     '<div class="detail-stats"><div class="detail-stat"><span>Damage</span><b>'+dmg+'</b></div><div class="detail-stat"><span>Range</span><b>'+range+'</b></div><div class="detail-stat"><span>Fire rate</span><b>'+rate+'</b></div><div class="detail-stat"><span>Total spent</span><b>'+t.spent+'¢</b></div></div>'+
-    '<div class="detail-actions"><button class="upgrade-button" data-action="upgrade" '+(max||state.credits<cost?"disabled":"")+'>'+(max?"MAX LEVEL":"↑ UPGRADE "+cost+"¢")+'</button><button data-action="target" '+(t.id==="mint"?"disabled":"")+'>TARGET: '+t.priority.toUpperCase()+'</button></div>'+
-    '<div class="detail-actions"><button class="sell-button" data-action="sell">SELL +'+Math.floor(t.spent*.7)+'¢</button></div>'+
+    '<div class="detail-actions"><button class="upgrade-button" data-action="upgrade" '+(max||!!choices||state.credits<cost?"disabled":"")+'>'+(max?"MAX LEVEL":choices?"PICK A BRANCH ↓":"↑ UPGRADE "+cost+"¢")+'</button><button data-action="target" '+(t.id==="mint"?"disabled":"")+'>TARGET: '+t.priority.toUpperCase()+'</button></div>'+
+    specialHTML+'<div class="detail-actions"><button class="sell-button" data-action="sell">SELL +'+Math.floor(t.spent*.7)+'¢</button></div>'+
     '<div class="detail-note">'+info+'</div>';
 }
 function upgradeSelected(){
@@ -217,6 +248,18 @@ function upgradeSelected(){
   spawnBurst(t.x,t.y,TOWER_BY_ID[t.id].color,22,130);
   playSound(780,.18,"triangle",.03);
   showToast("TOWER UPGRADED TO LVL "+t.level);
+  syncHUD();updateDetails();
+}
+
+function specializeSelected(spec){
+  const t=state?.selectedTower;
+  if(!t||t.level!==2||!AUGMENTS[t.id].some(a=>a.id===spec))return;
+  const cost=upgradeCost(t);
+  if(state.credits<cost){showToast("NOT ENOUGH CREDITS",true);return;}
+  state.credits-=cost;t.spent+=cost;t.level=3;t.specialization=spec;
+  spawnBurst(t.x,t.y,TOWER_BY_ID[t.id].color,38,190);
+  playSound(1000,.25,"sawtooth",.035);
+  showToast("✦ NEW TECH UNLOCKED");
   syncHUD();updateDetails();
 }
 function sellSelected(){
@@ -465,6 +508,10 @@ function beamLine(x1,y1,x2,y2,color,thickness=3,life=.12){
 function fireTower(t,target,stats){
   const def=TOWER_BY_ID[t.id];
   t.angle=Math.atan2(target.y-t.y,target.x-t.x);t.flash=.13;
+  if(t.id==="pulse"&&t.specialization==="focus"){
+    t.focusCount=t.focusTarget===target.id?Math.min(8,(t.focusCount||0)+1):0;
+    t.focusTarget=target.id;
+  }
   if(t.id==="rail"){
     const vx=Math.cos(t.angle),vy=Math.sin(t.angle);
     const endX=t.x+vx*stats.range,endY=t.y+vy*stats.range;
@@ -475,29 +522,29 @@ function fireTower(t,target,stats){
       return {e,proj:dx*vx+dy*vy,dist:Math.abs(dx*vy-dy*vx)};
     }).filter(v=>v.proj>0&&v.proj<stats.range&&v.dist<v.e.r+9).sort((a,b)=>a.proj-b.proj);
     for(const c of candidates){
-      if(hits>=3+t.level)break;
-      damageEnemy(c.e,stats.damage);hits++;
+      if(hits>=3+t.level+(t.specialization==="piercer"?4:0))break;
+      damageEnemy(c.e,stats.damage*(t.specialization==="breaker"&&(c.e.type==="boss"||c.e.armor>.09)?1.75:1),"rail");hits++;
     }
     spawnBurst(t.x+vx*28,t.y+vy*28,def.color,5,65);
     playSound(280,.13,"sawtooth",.025);
   } else if(t.id==="tesla"){
     let current=target,from={x:t.x,y:t.y},hits=new Set();
-    for(let i=0;i<3+t.level;i++){
+    for(let i=0;i<3+t.level+(t.specialization==="fork"?4:0);i++){
       if(!current)break;
       beamLine(from.x,from.y,current.x,current.y,def.color,3.5,.18);
-      damageEnemy(current,stats.damage*Math.pow(.84,i));
+      damageEnemy(current,stats.damage*Math.pow(.84,i)*(t.specialization==="overload"&&(current.shield>0||current.type==="boss")?1.5:1),"tesla");
       hits.add(current);from={x:current.x,y:current.y};
       current=state.enemies.filter(e=>!e.dead&&!hits.has(e)&&distance(e,from)<112)
         .sort((a,b)=>distance(a,from)-distance(b,from))[0]||null;
     }
     playSound(660,.075,"sawtooth",.018);
   } else {
-    const aoe=t.id==="mortar"?(65+t.level*7):0;
+    const aoe=t.id==="mortar"?(65+t.level*7)*(t.specialization==="cluster"?1.55:1):0;
     const p={
       x:t.x,y:t.y,target,tx:target.x,ty:target.y,
       damage:stats.damage,speed:t.id==="mortar"?270:570,
       color:def.color,r:t.id==="mortar"?7:4,
-      aoe,slow:t.id==="cryo"?.46:0,type:t.id
+      aoe,slow:t.id==="cryo"?(t.specialization==="deepfreeze"?.2:.46):0,type:t.id,spec:t.specialization,focus:t.focusCount||0
     };
     if(t.id==="mortar"){
       p.tx=target.x+rand(-12,12);p.ty=target.y+rand(-12,12);
@@ -515,12 +562,19 @@ function projectileImpact(p,e){
     state.enemies.forEach(enemy=>{
       if(enemy.dead)return;
       const d=Math.hypot(enemy.x-p.tx,enemy.y-p.ty);
-      if(d<p.aoe+enemy.r)damageEnemy(enemy,p.damage*(1-.35*Math.min(1,d/p.aoe)));
+      if(d<p.aoe+enemy.r){
+        damageEnemy(enemy,p.damage*(1-.35*Math.min(1,d/p.aoe)),"mortar");
+        if(!enemy.dead&&p.spec==="wildfire"){enemy.burnUntil=state.time+3.8;enemy.burnDps=Math.max(enemy.burnDps,p.damage*.26);}
+      }
     });
     playSound(175,.16,"sawtooth",.035);
   }else if(e&&!e.dead){
-    damageEnemy(e,p.damage);
-    if(p.slow){e.slowUntil=state.time+1.8;e.slowFactor=Math.min(e.slowFactor,p.slow);}
+    damageEnemy(e,p.damage*(p.spec==="focus"?1+Math.min(1.6,p.focus*.2):1),p.type);
+    if(p.spec==="ricochet"){
+      const other=state.enemies.find(t=>!t.dead&&t!==e&&distance(e,t)<110);
+      if(other){beamLine(e.x,e.y,other.x,other.y,p.color,1.5,.14);damageEnemy(other,p.damage*.75,"pulse");}
+    }
+    if(!e.dead&&p.slow){e.slowUntil=state.time+1.8;e.slowFactor=Math.min(e.slowFactor,p.slow);if(p.spec==="brittle")e.brittleUntil=state.time+2.5;}
     spawnBurst(p.x,p.y,p.color,3,40);
   }
 }
@@ -528,6 +582,7 @@ function updateCombat(dt){
   for(const t of state.towers){
     t.flash=Math.max(0,t.flash-dt);
     if(t.id==="mint")continue;
+    if(state.time<t.jammedUntil)continue;
     const stats=towerStats(t);
     const speedFactor=state.time<state.overdriveUntil?2:1;
     t.cooldown-=dt;
@@ -559,6 +614,7 @@ function updateEffects(dt){
 function update(dt){
   if(!state||state.paused||state.modal)return;
   state.time+=dt;
+  if(state.combo>0&&state.time>state.comboUntil)state.combo=0;
   if(state.waveActive){
     state.spawnElapsed+=dt;
     while(state.spawnIndex<state.spawning.length && state.spawning[state.spawnIndex].time<=state.spawnElapsed){
@@ -567,6 +623,8 @@ function update(dt){
     for(const e of state.enemies){
       if(e.dead)continue;
       e.hitFlash=Math.max(0,e.hitFlash-dt);
+      updateEnemyAbilities(e,dt);
+      if(e.dead)continue;
       if(state.time<e.stunUntil)continue;
       const slow=state.time<e.slowUntil?e.slowFactor:1;
       if(state.time>=e.slowUntil)e.slowFactor=1;
@@ -587,9 +645,12 @@ function completeWave(){
   state.waveActive=false;state.projectiles=[];
   const base=Math.round(45+state.wave*9);
   const passive=state.towers.filter(t=>t.id==="mint").reduce((sum,t)=>sum+towerStats(t).income,0);
-  state.credits+=base+passive;state.score+=(base+passive)*2;
+  const perfect=state.lives===state.waveStartLives;
+  const perfectBonus=perfect?35+state.wave*6:0;
+  if(perfect){state.perfectWaves++;state.score+=(200+state.wave*40);}
+  state.credits+=base+passive+perfectBonus;state.score+=(base+passive)*2;
   playSound(870,.22,"triangle",.035);
-  showToast("WAVE CLEARED +"+money(base+passive)+"¢");
+  showToast((perfect?"★ PERFECT DEFENSE ":"WAVE CLEARED ")+" +"+money(base+passive+perfectBonus)+"¢");
   saveBest();
   syncHUD();updateDetails();
   if(state.wave===MAX_WAVE&&!state.endless){showEndModal(true);return;}
@@ -732,6 +793,7 @@ function initControls(){
     const b=ev.target.closest("[data-action]");
     if(!b||!state)return;
     if(b.dataset.action==="upgrade")upgradeSelected();
+    else if(b.dataset.action==="specialize")specializeSelected(b.dataset.spec);
     else if(b.dataset.action==="sell")sellSelected();
     else if(b.dataset.action==="target"){
       const t=state.selectedTower;if(!t)return;
