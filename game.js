@@ -7,6 +7,10 @@ const ctx = canvas.getContext("2d", { alpha: false });
 const W = 800, H = 500, TILE = 50, COLS = 16, ROWS = 10;
 const TAU = Math.PI * 2;
 const MAX_WAVE = 20;
+const ARCADE_WAVES = 12;
+function isArcade(){return !!state&&state.playstyle==="arcade";}
+function bossWave(w){return w%(isArcade()?4:5)===0;}
+function campaignLength(){return isArcade()?ARCADE_WAVES:MAX_WAVE;}
 const STORAGE = "dont-play-this-game-v1";
 const AWARDS=[
   {id:"first",icon:"✦",name:"FIRST BLOOD",desc:"Destroy your first hostile."},
@@ -81,7 +85,7 @@ try { best = { ...best, ...(JSON.parse(localStorage.getItem(STORAGE)) || {}) }; 
 let soundOn = true;
 try { soundOn = localStorage.getItem(STORAGE+"-muted") !== "true"; } catch (_) {}
 let audio = null, lastSound = 0;
-let chosenMap = 0, chosenDifficulty = 0;
+let chosenMap = 0, chosenDifficulty = 0, chosenMode = "arcade";
 let state = null;
 let entityId = 1;
 let lastFrame = 0, ambientTime = 0, toastTimer = null;
@@ -120,13 +124,14 @@ function pointAt(path,d){
 }
 function newState(){
   return {
-    mapIndex:chosenMap,difficulty:chosenDifficulty,
+    mapIndex:chosenMap,difficulty:chosenDifficulty,playstyle:chosenMode,
     path:makePath(chosenMap),mode:"game",wave:0,waveActive:false,endless:false,
-    credits:430,lives:25,maxLives:25,score:0,kills:0,spent:0,combo:0,comboUntil:0,bestCombo:0,perfectWaves:0,waveStartLives:25,creditedDamage:0,abilityUses:[],
-    towers:[],enemies:[],projectiles:[],particles:[],beams:[],floaters:[],
+    credits:chosenMode==="arcade"?640:430,lives:chosenMode==="arcade"?18:25,maxLives:chosenMode==="arcade"?18:25,score:0,kills:0,spent:0,combo:0,comboUntil:0,bestCombo:0,perfectWaves:0,waveStartLives:25,creditedDamage:0,abilityUses:[],
+    towers:[],enemies:[],projectiles:[],particles:[],beams:[],floaters:[],drops:[],dropCounter:0,
     spawning:[],spawnElapsed:0,spawnIndex:0,time:0,hudElapsed:0,
-    paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,runSeed:Math.random(),
+    paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,runSeed:Math.random(),nextWaveIn:chosenMode==="arcade"?10:0,
     targetingStrike:false,overdriveUntil:0,shake:0,
+    gun:{active:false,down:false,aim:{x:400,y:250},heat:0,overheated:false,cooldown:0,hits:0,shots:0},
     cooldowns:{overdrive:0,emp:0,strike:0},
     perks:{power:0,rapid:0,range:0,cooldown:0},modal:false
   };
@@ -211,6 +216,8 @@ function startGame(){
   state=newState();
   $("menuScreen").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
+  $("gunPanel").classList.toggle("hidden",!isArcade());
+  $("canvasHint").textContent=isArcade()?"BUILD TOWERS, THEN TAP DIRECT CONTROL TO SHOOT":"SELECT A TOWER, THEN TAP AN OPEN TILE";
   $("sectorName").textContent=MAPS[state.mapIndex].name;
   $("footerMap").textContent=MAPS[state.mapIndex].name;
   $("canvasHint").classList.remove("faded");
@@ -238,6 +245,7 @@ function refreshTowerList(){
 function chooseBuild(id){
   if(!state||state.modal)return;
   state.targetingStrike=false;state.selectedTower=null;
+  state.gun.active=false;state.gun.down=false;
   state.selectedBuild=state.selectedBuild===id?null:id;
   refreshTowerList();updateDetails();syncHUD();
   playSound(430,.06,"triangle");
@@ -453,6 +461,12 @@ function wavePlan(w){
 }
 function startWave(){
   if(!state||state.waveActive||state.modal||state.paused)return;
+  if(isArcade()&&state.nextWaveIn>0){
+    const bonus=10+Math.ceil(state.nextWaveIn*3);
+    state.credits+=bonus;state.score+=bonus*3;
+    showToast("EARLY DEPLOY +"+bonus+"¢");
+  }
+  state.nextWaveIn=0;
   state.wave++;
   state.waveStartLives=state.lives;
   state.combo=0;
@@ -461,21 +475,21 @@ function startWave(){
   state.selectedBuild=null;state.targetingStrike=false;
   state.enemies=state.enemies.filter(e=>!e.dead);
   playSound(380,.22,"sawtooth",.035);
-  showToast(state.wave%5===0?"⚠ BOSS WAVE "+state.wave:"WAVE "+state.wave+" INCOMING");
+  showToast(bossWave(state.wave)?"⚠ TITAN INBOUND · WAVE "+state.wave:"WAVE "+state.wave+" · GO!");
   syncHUD();
 }
 function spawnEnemy(type,atDist=-30){
   const def=ENEMIES[type];
-  const hpScale=1+Math.pow(Math.max(0,state.wave-1),1.15)*.105;
+  const hpScale=1+Math.pow(Math.max(0,state.wave-1),1.15)*(isArcade()?.075:.105);
   const diff=[1,1.28,1.58][state.difficulty];
-  const bossScale=type==="boss"?1+Math.max(0,state.wave-5)*.15:1;
+  const bossScale=type==="boss"?1+Math.max(0,state.wave-(isArcade()?4:5))*.15:1;
   const hp=Math.round(def.hp*hpScale*diff*bossScale);
   const d=atDist,point=pointAt(state.path,d);
   state.enemies.push({
     id:entityId++,type,x:point.x,y:point.y,dist:d,hp,maxHp:hp,
     shield:Math.round((def.shield||0)*hpScale*diff),
     maxShield:Math.round((def.shield||0)*hpScale*diff),
-    speed:def.speed*(1+Math.min(.24,state.wave*.009))*(state.difficulty===2?1.06:1),
+    speed:def.speed*(1+Math.min(.24,state.wave*.009))*(state.difficulty===2?1.06:1)*(isArcade()?1.72:1),
     reward:def.reward,leak:def.leak,armor:def.armor||0,r:def.radius,
     dead:false,slowUntil:0,slowFactor:1,stunUntil:0,hitFlash:0,phase:rand(0,TAU),burnUntil:0,burnDps:0,brittleUntil:0,healClock:0,jamClock:0,bossClock:0,bossPhase:0
   });
@@ -517,6 +531,7 @@ function killEnemy(e){
   state.credits+=e.reward;
   const mult=1+Math.min(4,Math.floor(state.combo/5)*.5);
   state.score+=Math.round(e.reward*10*mult);state.kills++;
+  maybeDropSupply(e);
   if(state.kills===1)unlockAward("first");
   if(state.combo>=10)unlockAward("combo");
   if(state.combo===5||state.combo===10||state.combo===20||state.combo===35){
@@ -708,6 +723,12 @@ function updateEffects(dt){
 function update(dt){
   if(!state||state.paused||state.modal)return;
   state.time+=dt;
+  if(isArcade()&&!state.waveActive&&state.mode==="game"&&state.wave<campaignLength()){
+    state.nextWaveIn=Math.max(0,state.nextWaveIn-dt);
+    if(state.nextWaveIn<=0)startWave();
+  }
+  updateGun(dt);
+  updateSupplies(dt);
   if(state.combo>0&&state.time>state.comboUntil)state.combo=0;
   if(state.waveActive){
     state.spawnElapsed+=dt;
@@ -743,7 +764,7 @@ function update(dt){
   }
 }
 function completeWave(){
-  state.waveActive=false;state.projectiles=[];
+  state.waveActive=false;state.projectiles=[];state.gun.down=false;state.drops=[];
   const base=Math.round(45+state.wave*9);
   const passive=state.towers.filter(t=>t.id==="mint").reduce((sum,t)=>sum+towerStats(t).income,0);
   const perfect=state.lives===state.waveStartLives;
@@ -754,8 +775,9 @@ function completeWave(){
   showToast((perfect?"★ PERFECT DEFENSE ":"WAVE CLEARED ")+" +"+money(base+passive+perfectBonus)+"¢");
   saveBest();
   syncHUD();updateDetails();
-  if(state.wave===MAX_WAVE&&!state.endless){unlockAward("victory");if(state.difficulty===2)unlockAward("insane");showEndModal(true);return;}
-  if(state.wave%5===0){showPerkModal();return;}
+  if(state.wave===campaignLength()&&!state.endless){unlockAward("victory");if(state.difficulty===2)unlockAward("insane");showEndModal(true);return;}
+  if((isArcade()?state.wave%3===0:state.wave%5===0)){showPerkModal();return;}
+  if(isArcade())state.nextWaveIn=5;
 }
 function finishGame(won){
   if(!state||state.mode!=="game")return;
@@ -773,7 +795,7 @@ const PERKS = [
   {id:"cooldown",icon:"✦",name:"BATTLE NETWORK",desc:"Tactical abilities recharge 15% faster."}
 ];
 function showPerkModal(){
-  state.modal=true;state.targetingStrike=false;
+  state.modal=true;state.targetingStrike=false;state.gun.down=false;
   const pool=[...PERKS].sort(()=>Math.random()-.5).slice(0,3);
   $("modalRoot").innerHTML='<div class="modal-panel"><div class="modal-eyebrow">◈ RESEARCH AVAILABLE / WAVE '+state.wave+' COMPLETE</div><h2>CHOOSE AN<br><span style="color:var(--lime)">ADVANTAGE.</span></h2><p class="modal-copy">Command has authorized one system upgrade. Choose wisely. The invasion is only getting worse.</p><div class="perk-grid">'+pool.map(p=>'<button type="button" class="perk-card" data-perk="'+p.id+'"><span class="perk-card-icon">'+p.icon+'</span><b>'+p.name+'</b><small>'+p.desc+'</small><span>CHOOSE UPGRADE ↗</span></button>').join("")+'</div></div>';
   $("modalRoot").classList.remove("hidden");
@@ -804,7 +826,7 @@ function showEndModal(won){
 }
 function hideModal(){
   $("modalRoot").classList.add("hidden");$("modalRoot").innerHTML="";
-  if(state)state.modal=false;
+  if(state){state.modal=false;if(isArcade()&&!state.waveActive&&state.mode==="game"&&state.wave>0&&state.nextWaveIn<=0)state.nextWaveIn=5;}
 }
 function showQuitModal(){
   if(!state||state.modal)return;
