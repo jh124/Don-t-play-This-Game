@@ -15,6 +15,18 @@ const MAPS = [
   { name: "GHOST CIRCUIT", tint: "#b4a0ff", points: [[-1,7],[3,7],[3,2],[8,2],[8,8],[12,8],[12,3],[14,3],[14,7],[16,7]] }
 ];
 
+
+const POWER_PADS=[
+  [{c:5,r:3,type:"range"},{c:9,r:5,type:"speed"},{c:12,r:1,type:"damage"}],
+  [{c:2,r:5,type:"speed"},{c:9,r:4,type:"damage"},{c:13,r:3,type:"range"}],
+  [{c:5,r:4,type:"range"},{c:10,r:5,type:"damage"},{c:13,r:1,type:"speed"}]
+];
+const PAD_TYPES={
+  range:{color:"#60e6f7",name:"LONGSHOT PAD",bonus:"+22% range",symbol:"◎"},
+  speed:{color:"#c1a8ff",name:"QUICKFIRE PAD",bonus:"+18% fire rate",symbol:"ϟ"},
+  damage:{color:"#ffc978",name:"WARHEAD PAD",bonus:"+22% damage",symbol:"✦"}
+};
+function padAt(c,r){return POWER_PADS[state.mapIndex].find(p=>p.c===c&&p.r===r)||null;}
 const TOWERS = [
   { id:"pulse", name:"PULSE CANNON", caption:"Fast, reliable laser fire", cost:85, color:"#61eafb", symbol:"✦", damage:17, range:140, interval:.46 },
   { id:"rail", name:"RAIL DRIVER", caption:"Long-range piercing shots", cost:180, color:"#ffa879", symbol:"⌁", damage:78, range:220, interval:1.6 },
@@ -206,10 +218,11 @@ const AUGMENTS={
 function towerStats(t){
   const def=TOWER_BY_ID[t.id],lv=t.level-1;
   const relay=state.towers.some(other=>other!==t&&other.id==="mint"&&other.specialization==="relay"&&distance(other,t)<140);
+  const pad=padAt(t.c,t.r);
   return {
-    damage:Math.round(def.damage*(1+.42*lv+.1*lv*lv)*(1+.12*state.perks.power)*(t.specialization==="breaker"?1.25:1)),
-    range:(def.range+12*lv)*(1+.08*state.perks.range)*(t.specialization==="piercer"?1.22:1),
-    interval:def.interval*(1-.105*lv)/(1+.1*state.perks.rapid)/(relay?1.18:1),
+    damage:Math.round(def.damage*(1+.42*lv+.1*lv*lv)*(1+.12*state.perks.power)*(t.specialization==="breaker"?1.25:1)*(pad?.type==="damage"?1.22:1)),
+    range:(def.range+12*lv)*(1+.08*state.perks.range)*(t.specialization==="piercer"?1.22:1)*(pad?.type==="range"?1.22:1),
+    interval:def.interval*(1-.105*lv)/(1+.1*state.perks.rapid)/(relay?1.18:1)/(pad?.type==="speed"?1.18:1),
     income:Math.round((24+lv*18)*(1+.08*state.perks.power)*(t.specialization==="compound"?1.65:1))
   };
 }
@@ -226,6 +239,8 @@ function updateDetails(){
   const rate=t.id==="mint"?"—":(1/stats.interval).toFixed(1)+"/s";
   const choices=t.level===2?AUGMENTS[t.id]:null;
   const spec=t.specialization?AUGMENTS[t.id].find(a=>a.id===t.specialization):null;
+  const pad=padAt(t.c,t.r);
+  const padHTML=pad?'<div class="spec-active" style="color:'+PAD_TYPES[pad.type].color+';border-color:'+PAD_TYPES[pad.type].color+'65">◈ '+PAD_TYPES[pad.type].name+' · '+PAD_TYPES[pad.type].bonus+'</div>':'';
   const specialHTML=choices?'<div class="spec-heading">CHOOSE A TECH BRANCH · '+cost+'¢</div><div class="spec-grid">'+choices.map(a=>'<button data-action="specialize" data-spec="'+a.id+'" '+(state.credits<cost?'disabled':'')+'><b>'+a.name+'</b><small>'+a.desc+'</small></button>').join("")+'</div>':(spec?'<div class="spec-active">✦ '+spec.name+' ACTIVE</div>':'');
   const info=t.id==="mint" ? "Produces "+stats.income+" credits at the end of every completed wave." :
     t.id==="cryo"?"Shots slow enemies by 45% for 1.8 seconds.":
@@ -236,7 +251,7 @@ function updateDetails(){
   el.innerHTML='<div class="detail-top"><div><h3 style="color:'+def.color+'">'+def.name+'</h3><span>GRID '+String(t.c+1).padStart(2,"0")+' / '+String(t.r+1).padStart(2,"0")+'</span></div><span class="level-badge">LVL '+t.level+' / 4</span></div>'+
     '<div class="detail-stats"><div class="detail-stat"><span>Damage</span><b>'+dmg+'</b></div><div class="detail-stat"><span>Range</span><b>'+range+'</b></div><div class="detail-stat"><span>Fire rate</span><b>'+rate+'</b></div><div class="detail-stat"><span>Total spent</span><b>'+t.spent+'¢</b></div></div>'+
     '<div class="detail-actions"><button class="upgrade-button" data-action="upgrade" '+(max||!!choices||state.credits<cost?"disabled":"")+'>'+(max?"MAX LEVEL":choices?"PICK A BRANCH ↓":"↑ UPGRADE "+cost+"¢")+'</button><button data-action="target" '+(t.id==="mint"?"disabled":"")+'>TARGET: '+t.priority.toUpperCase()+'</button></div>'+
-    specialHTML+'<div class="detail-actions"><button class="sell-button" data-action="sell">SELL +'+Math.floor(t.spent*.7)+'¢</button></div>'+
+    padHTML+specialHTML+'<div class="detail-actions"><button class="sell-button" data-action="sell">SELL +'+Math.floor(t.spent*.7)+'¢</button></div>'+
     '<div class="detail-note">'+info+'</div>';
 }
 function upgradeSelected(){
@@ -285,6 +300,7 @@ function placeTower(c,r){
   state.towers.push(t);state.credits-=def.cost;state.spent+=def.cost;
   state.selectedTower=t;state.selectedBuild=null;
   spawnBurst(t.x,t.y,def.color,12,85);
+  if(padAt(c,r)){spawnBurst(t.x,t.y,PAD_TYPES[padAt(c,r).type].color,26,140);showToast("◈ POWER PAD ACTIVATED");}
   playSound(570,.09,"square",.025);
   $("canvasHint").classList.add("faded");
   syncHUD();updateDetails();return true;
