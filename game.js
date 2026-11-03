@@ -82,6 +82,14 @@ const ENEMIES = {
 
 let best = { wave:0, score:0 };
 try { best = { ...best, ...(JSON.parse(localStorage.getItem(STORAGE)) || {}) }; } catch (_) {}
+let arcadeBest={wave:0,score:0};
+try{arcadeBest={...arcadeBest,...(JSON.parse(localStorage.getItem(STORAGE+"-arcade")||"{}"))};}catch(_){}
+function refreshBest(){
+  const b=chosenMode==="arcade"?arcadeBest:best;
+  $("menuBest").textContent="WAVE "+b.wave;
+  $("menuBestScore").textContent=money(b.score)+" POINTS";
+  $("bestLabel").textContent="YOUR "+(chosenMode==="arcade"?"ARCADE":"CLASSIC")+" PERSONAL BEST";
+}
 let soundOn = true;
 try { soundOn = localStorage.getItem(STORAGE+"-muted") !== "true"; } catch (_) {}
 let audio = null, lastSound = 0;
@@ -189,12 +197,12 @@ function tickSoundtrack(dt){
 }
 function saveBest(){
   if(!state)return;
-  if(state.wave>best.wave || (state.wave===best.wave&&state.score>best.score)){
-    best.wave=state.wave;best.score=state.score;
-    try{localStorage.setItem(STORAGE,JSON.stringify(best));}catch(_){}
+  const record=state.playstyle==="arcade"?arcadeBest:best;
+  if(state.wave>record.wave||(state.wave===record.wave&&state.score>record.score)){
+    record.wave=state.wave;record.score=state.score;
+    try{localStorage.setItem(state.playstyle==="arcade"?STORAGE+"-arcade":STORAGE,JSON.stringify(record));}catch(_){}
   }
-  $("menuBest").textContent="WAVE "+best.wave;
-  $("menuBestScore").textContent=money(best.score)+" POINTS";
+  refreshBest();
 }
 function showToast(message,bad=false){
   const el=$("floatingMessage");el.textContent=message;el.classList.toggle("bad",bad);
@@ -207,8 +215,7 @@ function revealMenu(){
   hideModal();
   $("gameScreen").classList.add("hidden");
   $("menuScreen").classList.remove("hidden");
-  $("menuBest").textContent="WAVE "+best.wave;
-  $("menuBestScore").textContent=money(best.score)+" POINTS";
+  refreshBest();
   window.scrollTo({top:0,behavior:"instant"});
 }
 function startGame(){
@@ -419,7 +426,7 @@ function syncHUD(){
   if(!state.waveActive&&isArcade())$("battleStatus").textContent="AUTO-DEPLOY IN "+Math.ceil(state.nextWaveIn)+"s";
   $("gunButton").classList.toggle("active",state.gun.active);
   $("aimOverlay").classList.toggle("active",state.gun.active);
-  $("aimOverlay").innerHTML=state.gun.active?'<span>⌖</span> <b>EXIT AIM MODE</b>':'<span>⌖</span> <b>TAKE CONTROL</b>';
+  $("aimOverlay").querySelector("b").textContent=state.gun.active?"EXIT AIM MODE":"TAKE CONTROL";
   $("gunButton").setAttribute("aria-pressed",String(state.gun.active));
   $("gunButton").querySelector("strong").textContent=state.gun.active?"MANUAL CANNON ONLINE":"TAKE DIRECT CONTROL";
   $("heatFill").style.width=Math.round(state.gun.heat*100)+"%";
@@ -1134,6 +1141,7 @@ function initControls(){
     const button=ev.target.closest("[data-mode]");
     if(!button)return;
     chosenMode=button.dataset.mode;
+    refreshBest();
     $("modeOptions").querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b===button));
     $("startButton").innerHTML='<span>▶</span> '+(chosenMode==="arcade"?"START ARCADE ASSAULT":"DEFEND THE REACTOR")+' <span class="btn-arrow">↗</span>';
     playSound(600,.075,"triangle");
@@ -1546,7 +1554,6 @@ function loop(timestamp){
 initControls();
 updateSoundButton();
 syncAccolades();
-$("menuBest").textContent="WAVE "+best.wave;
-$("menuBestScore").textContent=money(best.score)+" POINTS";
+refreshBest();
 requestAnimationFrame(loop);
 })();
