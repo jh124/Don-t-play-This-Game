@@ -825,7 +825,7 @@ function shootGun(){
     const damage=(36+state.wave*4)*(center?1.8:1);
     damageEnemy(target,damage,"gun");
     g.hits++;
-    if(center)floatingDamage(target.x,target.y,"CRIT!","#d6fa70");
+    if(center)state.floaters.push({x:target.x,y:target.y-22,text:"CRIT!",color:"#d6fa70",life:.7});
   }
   playSound(hit?550:290,.055,"sawtooth",.018);
   if(g.heat>=1){
@@ -1016,7 +1016,7 @@ function useAbility(id){
   if(state.cooldowns[id]>state.time){showToast("ABILITY RECHARGING",true);return;}
   if(id==="strike"){
     state.targetingStrike=!state.targetingStrike;
-    state.selectedBuild=null;state.selectedTower=null;
+    state.selectedBuild=null;state.selectedTower=null;state.gun.active=false;state.gun.down=false;
     refreshTowerList();updateDetails();syncHUD();
     if(state.targetingStrike)showToast("TAP A TARGET FOR ORBITAL STRIKE");
     return;
@@ -1066,7 +1066,14 @@ function handleFieldClick(ev){
   ev.preventDefault();
   const p=screenToCell(ev);
   if(p.x<0||p.y<0||p.x>=W||p.y>=H)return;
+  if(collectSupply(p.x,p.y))return;
   if(state.targetingStrike){orbitalStrike(p.x,p.y);return;}
+  if(isArcade()&&state.gun.active){
+    state.gun.aim={x:p.x,y:p.y};state.gun.down=true;
+    state.gun.cooldown=0;shootGun();
+    if(canvas.setPointerCapture&&ev.pointerId!==undefined)canvas.setPointerCapture(ev.pointerId);
+    return;
+  }
   const match=state.towers.find(t=>t.c===p.c&&t.r===p.r);
   if(match){state.selectedTower=match;state.selectedBuild=null;refreshTowerList();updateDetails();playSound(510,.04,"triangle");return;}
   if(state.selectedBuild){placeTower(p.c,p.r);return;}
@@ -1074,6 +1081,14 @@ function handleFieldClick(ev){
 }
 function initControls(){
   $("startButton").addEventListener("click",startGame);
+  $("modeOptions").addEventListener("click",ev=>{
+    const button=ev.target.closest("[data-mode]");
+    if(!button)return;
+    chosenMode=button.dataset.mode;
+    $("modeOptions").querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b===button));
+    $("startButton").innerHTML='<span>▶</span> '+(chosenMode==="arcade"?"START ARCADE ASSAULT":"DEFEND THE REACTOR")+' <span class="btn-arrow">↗</span>';
+    playSound(600,.075,"triangle");
+  });
   $("dossierButton").addEventListener("click",showDossier);
   $("mapCards").addEventListener("click",ev=>{
     const button=ev.target.closest("[data-map]");
@@ -1110,9 +1125,21 @@ function initControls(){
     }
   });
   canvas.addEventListener("pointerdown",handleFieldClick);
-  canvas.addEventListener("pointermove",ev=>{if(state)state.hover=screenToCell(ev);});
-  canvas.addEventListener("pointerleave",()=>{if(state)state.hover=null;});
+  canvas.addEventListener("pointermove",ev=>{
+    if(!state)return;
+    const point=screenToCell(ev);state.hover=point;
+    if(isArcade()&&state.gun.active&&state.gun.down){
+      state.gun.aim={x:clamp(point.x,0,W),y:clamp(point.y,0,H)};
+    }
+  });
+  canvas.addEventListener("pointerup",()=>{if(state)state.gun.down=false;});
+  canvas.addEventListener("pointercancel",()=>{if(state)state.gun.down=false;});
+  window.addEventListener("pointerup",()=>{if(state)state.gun.down=false;});
+  canvas.addEventListener("pointerleave",()=>{
+    if(state){state.hover=null;state.gun.down=false;}
+  });
   $("waveButton").addEventListener("click",startWave);
+  $("gunButton").addEventListener("click",toggleGun);
   $("speedButton").addEventListener("click",()=>{
     if(!state||state.modal)return;
     state.speed=state.speed===1?2:state.speed===2?3:1;
@@ -1126,9 +1153,10 @@ function initControls(){
   window.addEventListener("keydown",ev=>{
     if(!state||state.modal)return;
     if(["Space","ArrowUp","ArrowDown"].includes(ev.code))ev.preventDefault();
-    if(ev.code==="Escape"){state.selectedBuild=null;state.selectedTower=null;state.targetingStrike=false;refreshTowerList();updateDetails();syncHUD();}
+    if(ev.code==="Escape"){state.selectedBuild=null;state.selectedTower=null;state.targetingStrike=false;state.gun.down=false;state.gun.active=false;refreshTowerList();updateDetails();syncHUD();}
     else if(ev.code==="Space")togglePause();
     else if(ev.key.toLowerCase()==="f")$("speedButton").click();
+    else if(ev.key.toLowerCase()==="d")toggleGun();
     else if(ev.key.toLowerCase()==="q")useAbility("overdrive");
     else if(ev.key.toLowerCase()==="e")useAbility("emp");
     else if(ev.key.toLowerCase()==="r")useAbility("strike");
@@ -1447,7 +1475,7 @@ function draw(){
   if(state.shake>0)ctx.translate(rand(-state.shake,state.shake)*.5,rand(-state.shake,state.shake)*.5);
   background();drawAmbience();drawPath();drawPowerPads();
   for(const t of state.towers)drawTower(t);
-  drawEnemies();drawProjectiles();drawSelection();
+  drawEnemies();drawProjectiles();drawArcade();drawSelection();
   if(state.time<state.overdriveUntil){
     ctx.fillStyle="#ffc66b";ctx.font="900 13px system-ui";ctx.textAlign="left";
     ctx.fillText("⚡ OVERDRIVE  "+Math.ceil(state.overdriveUntil-state.time)+"s",15,24);
