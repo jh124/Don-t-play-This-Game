@@ -1049,8 +1049,21 @@ function drawEnemies(){
     ctx.shadowBlur=0;
     ctx.fillStyle="#101b30";
     if(e.type==="boss"){
+      ctx.save();ctx.rotate(ambientTime*.7);
+      ctx.strokeStyle="#ffbf79";ctx.lineWidth=2.2;polygon(0,0,36,8,Math.PI/8);ctx.stroke();
+      for(let n=0;n<8;n++){const a=n*TAU/8;ctx.fillStyle="#ff9a66";ctx.fillRect(Math.cos(a)*36-2,Math.sin(a)*36-2,4,4);}
+      ctx.restore();
       polygon(0,0,15,6,Math.PI/6);ctx.fill();
       ctx.fillStyle="#fff3c0";ctx.font="900 15px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("!",0,1);
+    }else if(e.type==="medic"){
+      ctx.fillStyle="#c8ffd1";ctx.fillRect(-2,-8,4,16);ctx.fillRect(-8,-2,16,4);
+    }else if(e.type==="jammer"){
+      ctx.strokeStyle="#241029";ctx.lineWidth=2;
+      for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(0,0,5+k*4,Math.PI*1.17,Math.PI*1.83);ctx.stroke();}
+      ctx.fillStyle="#3e194c";ctx.fillRect(-3,0,6,5);
+    }else if(e.type==="carrier"){
+      roundRect(-10,-8,20,16,3,"#263248");
+      ctx.fillStyle="#ffdc9a";ctx.fillRect(-9,-2,5,5);ctx.fillRect(4,-2,5,5);
     }else{
       ctx.beginPath();ctx.arc(0,0,Math.max(3,e.r*.4),0,TAU);ctx.fill();
       ctx.fillStyle="#ffffffbf";ctx.fillRect(-2,-2,4,4);
@@ -1058,6 +1071,14 @@ function drawEnemies(){
     if(e.shield>0){
       ctx.beginPath();ctx.arc(0,0,e.r+5,0,TAU);
       ctx.strokeStyle="#7ad4ff";ctx.lineWidth=3;ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);
+    }
+    if(e.burnUntil>state.time){
+      ctx.fillStyle="#ffc16d";ctx.globalAlpha=.8;
+      ctx.beginPath();ctx.arc(Math.sin(ambientTime*12+e.id)*e.r*.4,-e.r,3,0,TAU);ctx.fill();ctx.globalAlpha=1;
+    }
+    if(e.brittleUntil>state.time){
+      ctx.strokeStyle="#c6ecff";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-e.r-5,-e.r-2);ctx.lineTo(-e.r-12,-e.r-10);ctx.stroke();
     }
     if(slowed||frozen){
       ctx.strokeStyle=frozen?"#e6faff":"#91d4ff";ctx.lineWidth=2;
