@@ -217,6 +217,7 @@ function startGame(){
   $("menuScreen").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
   $("gunPanel").classList.toggle("hidden",!isArcade());
+  $("aimOverlay").classList.toggle("hidden",!isArcade());
   $("dropHint").classList.toggle("hidden",!isArcade());
   $("contractPanel").classList.toggle("hidden",!isArcade());
   $("canvasHint").textContent=isArcade()?"BUILD TOWERS, THEN TAP DIRECT CONTROL TO SHOOT":"SELECT A TOWER, THEN TAP AN OPEN TILE";
@@ -233,11 +234,18 @@ function startGame(){
 }
 function renderTowerList(){
   $("towerList").innerHTML=TOWERS.map((t,i)=>'<button class="tower-option" type="button" data-id="'+t.id+'" title="Hotkey '+(i+1)+'"><span class="tower-glyph" style="color:'+t.color+'">'+t.symbol+'</span><span class="tower-label"><b>'+t.name+'</b><small>'+t.caption+'</small></span><span class="tower-cost">'+t.cost+' <small>¢</small></span></button>').join("");
+  $("mobileBuildDock").innerHTML=TOWERS.map((t,i)=>'<button class="quick-tower" type="button" data-id="'+t.id+'" title="'+t.name+' · '+t.cost+' credits"><span style="color:'+t.color+'">'+t.symbol+'</span><b>'+t.cost+'</b><small>'+t.name.split(" ")[0]+'</small></button>').join("");
   refreshTowerList();
 }
 function refreshTowerList(){
   if(!state)return;
   $("towerList").querySelectorAll(".tower-option").forEach(b=>{
+    const type=TOWER_BY_ID[b.dataset.id];
+    b.classList.toggle("selected",state.selectedBuild===type.id);
+    b.classList.toggle("unaffordable",state.credits<type.cost);
+    b.setAttribute("aria-pressed",String(state.selectedBuild===type.id));
+  });
+  $("mobileBuildDock").querySelectorAll(".quick-tower").forEach(b=>{
     const type=TOWER_BY_ID[b.dataset.id];
     b.classList.toggle("selected",state.selectedBuild===type.id);
     b.classList.toggle("unaffordable",state.credits<type.cost);
@@ -410,6 +418,8 @@ function syncHUD(){
   $("waveButton").textContent=state.waveActive?"◉ WAVE IN PROGRESS":isArcade()?"▶ DEPLOY NOW · +"+(10+Math.ceil(Math.max(0,state.nextWaveIn)*3))+"¢":"▶ START WAVE "+String(state.wave+1).padStart(2,"0");
   if(!state.waveActive&&isArcade())$("battleStatus").textContent="AUTO-DEPLOY IN "+Math.ceil(state.nextWaveIn)+"s";
   $("gunButton").classList.toggle("active",state.gun.active);
+  $("aimOverlay").classList.toggle("active",state.gun.active);
+  $("aimOverlay").innerHTML=state.gun.active?'<span>⌖</span> <b>EXIT AIM MODE</b>':'<span>⌖</span> <b>TAKE CONTROL</b>';
   $("gunButton").setAttribute("aria-pressed",String(state.gun.active));
   $("gunButton").querySelector("strong").textContent=state.gun.active?"MANUAL CANNON ONLINE":"TAKE DIRECT CONTROL";
   $("heatFill").style.width=Math.round(state.gun.heat*100)+"%";
@@ -1179,6 +1189,11 @@ function initControls(){
   });
   $("waveButton").addEventListener("click",startWave);
   $("gunButton").addEventListener("click",toggleGun);
+  $("aimOverlay").addEventListener("click",toggleGun);
+  $("mobileBuildDock").addEventListener("click",ev=>{
+    const b=ev.target.closest("[data-id]");
+    if(b)chooseBuild(b.dataset.id);
+  });
   $("speedButton").addEventListener("click",()=>{
     if(!state||state.modal)return;
     state.speed=state.speed===1?2:state.speed===2?3:1;
