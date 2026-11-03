@@ -8,6 +8,31 @@ const W = 800, H = 500, TILE = 50, COLS = 16, ROWS = 10;
 const TAU = Math.PI * 2;
 const MAX_WAVE = 20;
 const STORAGE = "dont-play-this-game-v1";
+const AWARDS=[
+  {id:"first",icon:"✦",name:"FIRST BLOOD",desc:"Destroy your first hostile."},
+  {id:"combo",icon:"ϟ",name:"CHAIN REACTION",desc:"Build a 10-kill chain."},
+  {id:"titan",icon:"☄",name:"TITANFALL",desc:"Destroy your first titan."},
+  {id:"tech",icon:"⚙",name:"MAD SCIENTIST",desc:"Unlock your first tower specialization."},
+  {id:"perfect",icon:"★",name:"UNTOUCHABLE",desc:"Earn five flawless wave clears in one run."},
+  {id:"abilities",icon:"⌘",name:"COMMANDER",desc:"Use all three tactical abilities in one run."},
+  {id:"victory",icon:"◆",name:"CORE KEEPER",desc:"Survive the entire 20-wave campaign."},
+  {id:"insane",icon:"♛",name:"ABSOLUTE MADMAN",desc:"Complete the campaign on Insane difficulty."}
+];
+let unlockedAwards=new Set();
+try{unlockedAwards=new Set(JSON.parse(localStorage.getItem(STORAGE+"-awards")||"[]"));}catch(_){} 
+function syncAccolades(){const el=$("dossierCount");if(el)el.textContent=unlockedAwards.size+" / "+AWARDS.length+" UNLOCKED";}
+function unlockAward(id){
+  if(unlockedAwards.has(id))return;
+  const award=AWARDS.find(a=>a.id===id);if(!award)return;
+  unlockedAwards.add(id);
+  try{localStorage.setItem(STORAGE+"-awards",JSON.stringify([...unlockedAwards]));}catch(_){}
+  syncAccolades();playSound(1046,.23,"triangle",.035);showToast("✦ ACCOLADE: "+award.name);
+}
+function showDossier(){
+  $("modalRoot").innerHTML='<div class="modal-panel accolades-panel"><div class="modal-eyebrow">◈ CLASSIFIED PERSONNEL RECORD</div><h2>YOUR <span style="color:var(--lime)">LEGACY.</span></h2><p class="modal-copy">Every hard-earned accolade is saved on this device. There are no participation trophies in sector defense.</p><div class="accolades-grid">'+AWARDS.map(a=>'<div class="accolade '+(unlockedAwards.has(a.id)?"accolade-earned":"")+'"><span class="accolade-icon">'+a.icon+'</span><div><b>'+a.name+'</b><small>'+a.desc+'</small></div><span class="accolade-state">'+(unlockedAwards.has(a.id)?"✓":"🔒")+'</span></div>').join("")+'</div><div class="modal-actions"><button id="closeDossier" type="button" class="btn btn-primary">BACK TO COMMAND</button></div></div>';
+  $("modalRoot").classList.remove("hidden");
+  $("closeDossier").addEventListener("click",hideModal);
+}
 
 const MAPS = [
   { name: "NEON CROSSING", tint: "#52e0ed", points: [[-1,4],[2,4],[2,1],[6,1],[6,7],[10,7],[10,3],[13,3],[13,5],[16,5]] },
@@ -97,7 +122,7 @@ function newState(){
   return {
     mapIndex:chosenMap,difficulty:chosenDifficulty,
     path:makePath(chosenMap),mode:"game",wave:0,waveActive:false,endless:false,
-    credits:430,lives:25,maxLives:25,score:0,kills:0,spent:0,combo:0,comboUntil:0,bestCombo:0,perfectWaves:0,waveStartLives:25,creditedDamage:0,
+    credits:430,lives:25,maxLives:25,score:0,kills:0,spent:0,combo:0,comboUntil:0,bestCombo:0,perfectWaves:0,waveStartLives:25,creditedDamage:0,abilityUses:[],
     towers:[],enemies:[],projectiles:[],particles:[],beams:[],floaters:[],
     spawning:[],spawnElapsed:0,spawnIndex:0,time:0,hudElapsed:0,
     paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,runSeed:Math.random(),
@@ -272,6 +297,7 @@ function specializeSelected(spec){
   const cost=upgradeCost(t);
   if(state.credits<cost){showToast("NOT ENOUGH CREDITS",true);return;}
   state.credits-=cost;t.spent+=cost;t.level=3;t.specialization=spec;
+  unlockAward("tech");
   spawnBurst(t.x,t.y,TOWER_BY_ID[t.id].color,38,190);
   playSound(1000,.25,"sawtooth",.035);
   showToast("✦ NEW TECH UNLOCKED");
@@ -457,12 +483,15 @@ function killEnemy(e){
   state.credits+=e.reward;
   const mult=1+Math.min(4,Math.floor(state.combo/5)*.5);
   state.score+=Math.round(e.reward*10*mult);state.kills++;
+  if(state.kills===1)unlockAward("first");
+  if(state.combo>=10)unlockAward("combo");
   if(state.combo===5||state.combo===10||state.combo===20||state.combo===35){
     showToast(state.combo+"× KILL CHAIN  ·  SCORE BOOST!");
     playSound(980,.13,"triangle",.03);
   }
   spawnBurst(e.x,e.y,ENEMIES[e.type].color,e.type==="boss"?60:12,e.type==="boss"?255:115);
   if(e.type==="boss"){
+    unlockAward("titan");
     state.shake=19;playSound(110,.4,"sawtooth",.07);
     showToast("TITAN DOWN! +"+e.reward+"¢");
   }else if(e.type==="brute")playSound(170,.07,"triangle",.02);
@@ -678,13 +707,13 @@ function completeWave(){
   const passive=state.towers.filter(t=>t.id==="mint").reduce((sum,t)=>sum+towerStats(t).income,0);
   const perfect=state.lives===state.waveStartLives;
   const perfectBonus=perfect?35+state.wave*6:0;
-  if(perfect){state.perfectWaves++;state.score+=(200+state.wave*40);}
+  if(perfect){state.perfectWaves++;state.score+=(200+state.wave*40);if(state.perfectWaves>=5)unlockAward("perfect");}
   state.credits+=base+passive+perfectBonus;state.score+=(base+passive)*2;
   playSound(870,.22,"triangle",.035);
   showToast((perfect?"★ PERFECT DEFENSE ":"WAVE CLEARED ")+" +"+money(base+passive+perfectBonus)+"¢");
   saveBest();
   syncHUD();updateDetails();
-  if(state.wave===MAX_WAVE&&!state.endless){showEndModal(true);return;}
+  if(state.wave===MAX_WAVE&&!state.endless){unlockAward("victory");if(state.difficulty===2)unlockAward("insane");showEndModal(true);return;}
   if(state.wave%5===0){showPerkModal();return;}
 }
 function finishGame(won){
@@ -751,6 +780,8 @@ function useAbility(id){
     return;
   }
   state.cooldowns[id]=state.time+ABILITY_CD[id]*Math.pow(.85,state.perks.cooldown);
+  if(!state.abilityUses.includes(id))state.abilityUses.push(id);
+  if(state.abilityUses.length===3)unlockAward("abilities");
   if(id==="overdrive"){
     state.overdriveUntil=state.time+8;
     showToast("⚡ OVERDRIVE ENGAGED");
@@ -766,6 +797,8 @@ function useAbility(id){
 }
 function orbitalStrike(x,y){
   state.cooldowns.strike=state.time+ABILITY_CD.strike*Math.pow(.85,state.perks.cooldown);
+  if(!state.abilityUses.includes("strike"))state.abilityUses.push("strike");
+  if(state.abilityUses.length===3)unlockAward("abilities");
   state.targetingStrike=false;
   const blast=120;
   const damage=390+state.wave*20;
@@ -799,6 +832,7 @@ function handleFieldClick(ev){
 }
 function initControls(){
   $("startButton").addEventListener("click",startGame);
+  $("dossierButton").addEventListener("click",showDossier);
   $("mapCards").addEventListener("click",ev=>{
     const button=ev.target.closest("[data-map]");
     if(!button)return;
@@ -1184,6 +1218,7 @@ function loop(timestamp){
 
 initControls();
 updateSoundButton();
+syncAccolades();
 $("menuBest").textContent="WAVE "+best.wave;
 $("menuBestScore").textContent=money(best.score)+" POINTS";
 requestAnimationFrame(loop);
