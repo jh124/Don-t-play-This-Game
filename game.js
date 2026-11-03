@@ -217,6 +217,7 @@ function startGame(){
   $("menuScreen").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
   $("gunPanel").classList.toggle("hidden",!isArcade());
+  $("dropHint").classList.toggle("hidden",!isArcade());
   $("canvasHint").textContent=isArcade()?"BUILD TOWERS, THEN TAP DIRECT CONTROL TO SHOOT":"SELECT A TOWER, THEN TAP AN OPEN TILE";
   $("sectorName").textContent=MAPS[state.mapIndex].name;
   $("footerMap").textContent=MAPS[state.mapIndex].name;
@@ -824,6 +825,7 @@ function shootGun(){
     const center=within<target.r+8;
     const damage=(36+state.wave*4)*(center?1.8:1);
     damageEnemy(target,damage,"gun");
+    if(center)state.score+=18;
     g.hits++;
     if(center)state.floaters.push({x:target.x,y:target.y-22,text:"CRIT!",color:"#d6fa70",life:.7});
   }
@@ -838,7 +840,7 @@ function shootGun(){
 function updateGun(dt){
   const g=state.gun;
   g.cooldown=Math.max(0,g.cooldown-dt);
-  const cooling=g.down&&!g.overheated?.045:.17;
+  const cooling=(g.down&&!g.overheated)? .045 : .17;
   g.heat=Math.max(0,g.heat-cooling*dt);
   if(g.overheated&&g.heat<=.24)g.overheated=false;
   if(g.active&&g.down&&!g.overheated)shootGun();
@@ -938,7 +940,7 @@ function update(dt){
   }
 }
 function completeWave(){
-  state.waveActive=false;state.projectiles=[];state.gun.down=false;state.drops=[];
+  state.waveActive=false;state.projectiles=[];state.gun.down=false;
   const base=Math.round(45+state.wave*9);
   const passive=state.towers.filter(t=>t.id==="mint").reduce((sum,t)=>sum+towerStats(t).income,0);
   const perfect=state.lives===state.waveStartLives;
