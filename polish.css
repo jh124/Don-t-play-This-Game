@@ -92,3 +92,13 @@ body{background:radial-gradient(ellipse 55% 35% at 74% 4%,#1c3242 0,transparent 
 .accolade small{font-size:9px;line-height:1.3;display:block;margin-top:5px;color:#91a8bc}
 .accolade-state{color:#d6fa70;font-size:12px}
 @media(max-width:600px){.accolades-grid{grid-template-columns:1fr}.accolade{min-height:57px}.dossier-button{padding:10px}}
+
+.end-rank{display:flex;align-items:center;justify-content:space-between;margin:18px 0;border:1px solid #657952;background:linear-gradient(100deg,#233932,#122d33);padding:11px 18px;border-radius:8px}
+.end-rank span{display:block;font-size:9px;letter-spacing:1.5px;color:#a5bba8;font-weight:900}
+.end-rank strong{font:900 27px/1.2 var(--display);letter-spacing:.5px;display:block;color:#d6fa70;margin-top:3px}
+.end-rank>b{font:900 58px/1 var(--display);color:#d6fa70;text-shadow:0 0 25px #d6fa7050}
+.modal-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.end-chain{font-size:10px;color:#92a8bc;letter-spacing:1px;font-weight:900;border-top:1px dashed #394c5e;border-bottom:1px dashed #394c5e;padding:10px 1px;margin-top:-10px}
+.end-chain strong{color:#d6fa70;font-size:15px;margin-left:7px}
+.end-chain span{float:right;color:#89a0bb}
+@media(max-width:600px){.end-rank{padding:9px 12px}.end-rank strong{font-size:21px}.end-rank>b{font-size:50px}.modal-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.end-chain span{float:none;display:block;margin-top:7px;font-size:9px}}
