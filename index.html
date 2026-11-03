@@ -39,6 +39,7 @@
             <button class="map-card" data-map="1" type="button"><span class="map-symbol">⌁</span><span><b>REDLINE CANYON</b><small>Long, lethal corridors</small></span></button>
             <button class="map-card" data-map="2" type="button"><span class="map-symbol">✳</span><span><b>GHOST CIRCUIT</b><small>Twisted reactor passages</small></span></button>
           </div>
+          <div class="field-note"><span class="field-note-icon">◉</span><span><b>FIELD MANUAL</b> Build on any open tile. Kill hostiles for credits. Upgrade to level 2 to unlock two competing tech branches. Survive 20 waves. <strong>Don't blink.</strong></span></div>
           <div class="setup-heading difficulty-heading"><span>02 / SET THE PAIN LEVEL</span><span>GOOD LUCK</span></div>
           <div id="difficultyOptions" class="segmented" role="group" aria-label="Choose difficulty">
             <button type="button" data-difficulty="0" class="active">NORMAL</button>
@@ -79,17 +80,23 @@
               <div class="battle-topbar"><span><i></i> <span id="battleStatus">AWAITING DEPLOYMENT</span></span><span id="battleIndicator">THREAT: LOW</span></div>
               <div id="canvasContainer" class="canvas-container">
                 <canvas id="gameCanvas" width="800" height="500" aria-label="Tower defense battlefield"></canvas>
+                <div id="bossBar" class="boss-bar hidden" aria-live="off"><span class="boss-bar-title">⚠ TITAN CLASS DETECTED</span><span class="boss-bar-hp" id="bossHealthText">100%</span><div class="boss-bar-track"><div id="bossHealthFill"></div></div></div>
                 <div id="canvasHint" class="canvas-hint">SELECT A TOWER, THEN TAP AN OPEN TILE</div>
                 <div id="floatingMessage" class="floating-message"></div>
               </div>
               <div class="battle-footer"><span>◈ <span id="footerMap">NEON CROSSING</span></span><span id="waveProgress">READY FOR WAVE 01</span><span>DEFEND THE CORE ◆</span></div>
             </div>
-            <div class="bottom-controls">
+            <div class="combat-readout">
+            <div class="readout-head"><span id="intelLabel">NEXT THREAT <b>FIRST CONTACT</b></span><span id="intelCounts">0 / 0 HOSTILES</span></div>
+            <div class="readout-track"><div id="waveMeterFill" class="readout-fill"></div></div>
+            <div class="readout-foot"><span id="enemyIntel">SCOUT DRONES · LIGHT ARMOR</span><span id="comboIntel">CHAIN ×0</span></div>
+          </div>
+          <div class="bottom-controls">
               <div class="wave-callout"><span id="waveTag">NEXT UP / WAVE 01</span><strong id="waveDescription">Scout drones approaching</strong></div>
               <button id="waveButton" class="btn btn-primary wave-button" type="button">▶ START WAVE 01</button>
             </div>
             <div class="abilities-area">
-              <div class="section-label"><span>TACTICAL ABILITIES</span><small>USE THEM OR LOSE THEM</small></div>
+              <div class="section-label"><span>TACTICAL ABILITIES</span><small>COOLDOWNS RESET BETWEEN RUNS</small></div>
               <div class="abilities">
                 <button id="abilityOverdrive" type="button" class="ability" data-ability="overdrive"><span class="ability-icon overdrive">⚡</span><span><b>OVERDRIVE</b><small>Double fire rate · 8s</small></span><span class="ability-cooldown" id="cdOverdrive">READY</span></button>
                 <button id="abilityEmp" type="button" class="ability" data-ability="emp"><span class="ability-icon emp">❄</span><span><b>EMP BLAST</b><small>Freeze all enemies · 3s</small></span><span class="ability-cooldown" id="cdEmp">READY</span></button>
