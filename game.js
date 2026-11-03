@@ -19,7 +19,7 @@ const AWARDS=[
   {id:"tech",icon:"⚙",name:"MAD SCIENTIST",desc:"Unlock your first tower specialization."},
   {id:"perfect",icon:"★",name:"UNTOUCHABLE",desc:"Earn five flawless wave clears in one run."},
   {id:"abilities",icon:"⌘",name:"COMMANDER",desc:"Use all three tactical abilities in one run."},
-  {id:"victory",icon:"◆",name:"CORE KEEPER",desc:"Survive the entire 20-wave campaign."},
+  {id:"victory",icon:"◆",name:"CORE KEEPER",desc:"Complete the full campaign in either mode."},
   {id:"insane",icon:"♛",name:"ABSOLUTE MADMAN",desc:"Complete the campaign on Insane difficulty."}
 ];
 let unlockedAwards=new Set();
@@ -1043,7 +1043,8 @@ function showEndModal(won){
   if(!state)return;
   state.modal=true;state.targetingStrike=false;
   const victory=won&&state.mode!=="lost";
-  const rating=victory?(state.perfectWaves>=16&&state.lives>=18?"S":state.perfectWaves>=12?"A":state.perfectWaves>=6?"B":"C"):(state.wave>=15?"B":state.wave>=8?"C":"D");
+  const perfection=state.perfectWaves/Math.max(1,campaignLength());
+  const rating=victory?(perfection>=.82&&state.lives>=state.maxLives*.7?"S":perfection>=.6?"A":perfection>=.3?"B":"C"):(state.wave>=campaignLength()*.7?"B":state.wave>=campaignLength()*.4?"C":"D");
   const ratingTitle=rating==="S"?"LEGENDARY DEFENSE":rating==="A"?"ELITE COMMANDER":rating==="B"?"BATTLE HARDENED":rating==="C"?"SURVIVOR":"TACTICAL LEARNING OPPORTUNITY";
   $("modalRoot").innerHTML='<div class="modal-panel"><div class="modal-eyebrow">'+(victory?"◈ MISSION COMPLETE / THE CORE SURVIVES":"⚠ SIGNAL LOST / REACTOR DESTROYED")+'</div><h2>'+(victory?'YOU ACTUALLY<br><span style="color:var(--lime)">WON.</span>':'GAME<br><span style="color:var(--red)">OVER.</span>')+'</h2><p class="modal-copy">'+(victory?"Against all odds, your reactor survived 20 waves. But the galaxy has more enemies. A lot more.":"The enemy breached the reactor. Your questionable tactical decisions will be remembered. Want another shot?")+'</p>'+
     '<div class="end-rank"><div><span>MISSION PERFORMANCE</span><strong>'+ratingTitle+'</strong></div><b>'+rating+'</b></div>'+
