@@ -296,6 +296,21 @@ function syncHUD(){
   $("livesValue").style.color=state.lives<=8?"#ff7185":"";
   $("waveValue").innerHTML=state.wave+' <span class="stat-suffix">/ '+(state.endless?"∞":MAX_WAVE)+'</span>';
   $("scoreValue").textContent=money(state.score);
+  const planned=state.spawning.length;
+  const left=state.enemies.length+planned-state.spawnIndex;
+  const complete=state.waveActive?clamp(1-left/Math.max(1,planned),0,1):0;
+  $("waveMeterFill").style.width=(complete*100).toFixed(1)+"%";
+  $("intelLabel").innerHTML=(state.waveActive?"CURRENT THREAT ":"NEXT THREAT ")+"<b>"+waveTitle(state.wave+(state.waveActive?0:1))+"</b>";
+  $("intelCounts").textContent=state.waveActive?left+" HOSTILES REMAIN":"WAVE "+String(state.wave+1).padStart(2,"0")+" / READY";
+  $("enemyIntel").textContent=waveDescription(state.wave+(state.waveActive?0:1));
+  $("comboIntel").textContent=state.combo>=3?"✦ CHAIN ×"+state.combo:"★ "+state.perfectWaves+" PERFECT WAVES";
+  $("comboIntel").classList.toggle("heated",state.combo>=5);
+  const titan=state.enemies.find(e=>e.type==="boss"&&!e.dead);
+  $("bossBar").classList.toggle("hidden",!titan);
+  if(titan){
+    $("bossHealthText").textContent=Math.ceil(100*clamp(titan.hp/titan.maxHp,0,1))+"%";
+    $("bossHealthFill").style.width=(100*clamp(titan.hp/titan.maxHp,0,1)).toFixed(1)+"%";
+  }
   $("battleStatus").textContent=state.paused?"SYSTEM PAUSED":state.waveActive?"HOSTILES INBOUND":"AWAITING DEPLOYMENT";
   $("battleIndicator").textContent=state.waveActive?"THREATS: "+(state.enemies.length+(state.spawning.length-state.spawnIndex)):"THREAT: "+(state.wave>=10?"HIGH":"LOW");
   $("waveProgress").textContent=state.waveActive?"ENEMIES REMAINING: "+(state.enemies.length+(state.spawning.length-state.spawnIndex)):"NEXT WAVE: "+String(state.wave+1).padStart(2,"0");
@@ -481,14 +496,14 @@ function updateEnemyAbilities(e,dt){
     e.bossClock+=dt;
     if(e.bossClock>8.5){
       e.bossClock=0;state.shake=12;
-      state.enemies.forEach(other=>{if(!other.dead&&other!==e&&distance(e,other)<130)other.shield+=Math.round(other.maxHp*.22);});
+      state.enemies.forEach(other=>{if(!other.dead&&other!==e&&distance(e,other)<130)other.shield=Math.min(other.shield+Math.round(other.maxHp*.22),other.maxHp*.55);});
       for(let i=0;i<3+Math.min(4,Math.floor(state.wave/10));i++)spawnEnemy(i%2?"runner":"drone",e.dist-rand(30,110));
       spawnBurst(e.x,e.y,"#ff738a",36,170);
       showToast("⚠ TITAN DEPLOYED REINFORCEMENTS");
       playSound(135,.3,"sawtooth",.05);
     }
     if(e.bossPhase===0&&e.hp<e.maxHp*.5){
-      e.bossPhase=1;e.shield+=Math.round(e.maxHp*.28);
+      e.bossPhase=1;e.shield+=Math.round(e.maxHp*.28);e.maxShield=Math.max(e.maxShield,e.shield);
       e.speed*=1.35;state.shake=15;
       spawnBurst(e.x,e.y,"#ffcf81",48,210);
       showToast("⚠ TITAN ENRAGED · SHIELD RESTORED");
@@ -639,7 +654,7 @@ function update(dt){
   }
   updateEffects(dt);
   state.hudElapsed+=dt;
-  if(state.hudElapsed>.14){state.hudElapsed=0;syncHUD();}
+  if(state.hudElapsed>.14){state.hudElapsed=0;syncHUD();if(state.selectedTower)updateDetails();}
 }
 function completeWave(){
   state.waveActive=false;state.projectiles=[];
