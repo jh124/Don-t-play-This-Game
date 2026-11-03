@@ -750,6 +750,150 @@ function updateEffects(dt){
   state.floaters=state.floaters.filter(f=>f.life>0);
   state.shake=Math.max(0,state.shake-34*dt);
 }
+
+const SUPPLY_TYPES={
+  credits:{color:"#f9d977",icon:"¢",name:"CREDIT CRATE"},
+  repair:{color:"#83fca4",icon:"+",name:"REACTOR REPAIR"},
+  coolant:{color:"#83e5ff",icon:"❄",name:"INSTANT COOLANT"},
+  blast:{color:"#ff946e",icon:"✦",name:"SCRAP DETONATOR"}
+};
+function maybeDropSupply(e){
+  if(!isArcade()||state.drops.length>=4||e.type==="mini")return;
+  if(e.type!=="boss"&&state.kills%8!==0)return;
+  const cycle=["credits","coolant","credits","repair","blast"];
+  const type=e.type==="boss"?"blast":cycle[state.dropCounter++%cycle.length];
+  const x=clamp(e.x,24,W-24),y=clamp(e.y,35,H-35);
+  state.drops.push({x,y,type,life:9,phase:rand(0,TAU)});
+  spawnBurst(x,y,SUPPLY_TYPES[type].color,18,75);
+}
+function collectSupply(x,y){
+  if(!isArcade()||!state||state.modal)return false;
+  const index=state.drops.findIndex(d=>Math.hypot(d.x-x,d.y-y)<32);
+  if(index<0)return false;
+  const d=state.drops.splice(index,1)[0],kind=SUPPLY_TYPES[d.type];
+  if(d.type==="credits")state.credits+=100+state.wave*7;
+  if(d.type==="repair")state.lives=Math.min(state.maxLives,state.lives+3);
+  if(d.type==="coolant"){state.gun.heat=0;state.gun.overheated=false;state.gun.cooldown=0;}
+  if(d.type==="blast"){
+    for(const enemy of [...state.enemies])if(!enemy.dead)damageEnemy(enemy,130+state.wave*14,"supply");
+    state.shake=11;
+    state.beams.push({emp:true,life:.22,maxLife:.22,color:"#ff9f71"});
+  }
+  spawnBurst(d.x,d.y,kind.color,30,180);
+  showToast("✦ "+kind.name);
+  playSound(840,.18,"triangle",.05);
+  syncHUD();
+  return true;
+}
+function updateSupplies(dt){
+  if(!isArcade())return;
+  for(const d of state.drops)d.life-=dt;
+  state.drops=state.drops.filter(d=>d.life>0);
+}
+function toggleGun(){
+  if(!isArcade()||state.modal||state.mode!=="game")return;
+  const g=state.gun;
+  g.active=!g.active;g.down=false;
+  if(g.active){
+    state.selectedBuild=null;state.selectedTower=null;state.targetingStrike=false;
+    refreshTowerList();updateDetails();
+    $("canvasHint").textContent="HOLD AND DRAG TO FIRE YOUR RAILGUN · DON'T OVERHEAT";
+    $("canvasHint").classList.remove("faded");
+  }else{
+    $("canvasHint").classList.add("faded");
+  }
+  playSound(g.active?680:280,.12,"triangle");
+  syncHUD();
+}
+function shootGun(){
+  if(!isArcade()||!state.waveActive||state.paused||state.modal||state.mode!=="game")return;
+  const g=state.gun;
+  if(!g.active||g.overheated||g.cooldown>0)return;
+  g.cooldown=.19;
+  g.heat=clamp(g.heat+.105,0,1);
+  g.shots++;
+  const aim=g.aim;
+  const target=state.enemies.filter(e=>!e.dead)
+    .sort((a,b)=>Math.hypot(a.x-aim.x,a.y-aim.y)-Math.hypot(b.x-aim.x,b.y-aim.y))[0];
+  const within=target?Math.hypot(target.x-aim.x,target.y-aim.y):Infinity;
+  const hit=within<59+(target?.r||0)*.4;
+  const impact=hit?target:aim;
+  beamLine(29,470,impact.x,impact.y,hit?"#d6fa70":"#4d97ad",3.6,.095);
+  spawnBurst(impact.x,impact.y,hit?"#d6fa70":"#4c87aa",hit?8:3,hit?82:36);
+  if(hit){
+    const center=within<target.r+8;
+    const damage=(36+state.wave*4)*(center?1.8:1);
+    damageEnemy(target,damage,"gun");
+    g.hits++;
+    if(center)floatingDamage(target.x,target.y,"CRIT!","#d6fa70");
+  }
+  playSound(hit?550:290,.055,"sawtooth",.018);
+  if(g.heat>=1){
+    g.heat=1;g.overheated=true;g.down=false;
+    state.shake=Math.max(state.shake,5);
+    showToast("⚠ RAILGUN OVERHEATED",true);
+    playSound(125,.2,"square",.035);
+  }
+}
+function updateGun(dt){
+  const g=state.gun;
+  g.cooldown=Math.max(0,g.cooldown-dt);
+  const cooling=g.down&&!g.overheated?.045:.17;
+  g.heat=Math.max(0,g.heat-cooling*dt);
+  if(g.overheated&&g.heat<=.24)g.overheated=false;
+  if(g.active&&g.down&&!g.overheated)shootGun();
+}
+function drawArcade(){
+  if(!isArcade())return;
+  const g=state.gun;
+  ctx.save();
+  ctx.translate(30,472);
+  const a=Math.atan2(g.aim.y-472,g.aim.x-30);
+  ctx.rotate(a);
+  ctx.shadowColor="#d6fa70";ctx.shadowBlur=15;
+  ctx.fillStyle="#0e2630";ctx.strokeStyle="#d6fa70";ctx.lineWidth=2;
+  roundRect(-14,-17,31,34,6,"#142f3d","#5c958e");
+  roundRect(1,-7,35,14,3,"#243f49","#b6ff74");
+  ctx.fillStyle=g.overheated?"#ff7583":"#e4ffa7";
+  ctx.fillRect(29,-4,8,8);
+  ctx.restore();
+  const aim=g.aim;
+  if(g.active){
+    ctx.save();ctx.translate(aim.x,aim.y);
+    ctx.strokeStyle=g.overheated?"#ff657e":"#d6fa70";
+    ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=12;ctx.lineWidth=2;
+    const radius=17+Math.sin(ambientTime*7)*1.4;
+    ctx.beginPath();ctx.arc(0,0,radius,.2,1.37);ctx.arc(0,0,radius,1.76,2.94);ctx.arc(0,0,radius,3.35,4.52);ctx.arc(0,0,radius,4.91,6.09);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-7,0);ctx.lineTo(-2,0);ctx.moveTo(2,0);ctx.lineTo(7,0);ctx.moveTo(0,-7);ctx.lineTo(0,-2);ctx.moveTo(0,2);ctx.lineTo(0,7);ctx.stroke();
+    ctx.restore();
+  }
+  for(const d of state.drops){
+    const kind=SUPPLY_TYPES[d.type];
+    const pulse=1+.08*Math.sin(ambientTime*9+d.phase);
+    ctx.save();ctx.translate(d.x,d.y);ctx.scale(pulse,pulse);
+    ctx.shadowColor=kind.color;ctx.shadowBlur=21;
+    ctx.fillStyle="#102337";ctx.strokeStyle=kind.color;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(0,0,18,0,TAU);ctx.fill();ctx.stroke();
+    ctx.font="900 19px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle=kind.color;
+    ctx.fillText(kind.icon,0,1);
+    ctx.shadowBlur=0;ctx.strokeStyle=kind.color;ctx.lineWidth=2;ctx.globalAlpha=.5;
+    ctx.beginPath();ctx.arc(0,0,22+Math.sin(ambientTime*5+d.phase)*3,0,TAU);ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.fillStyle="#101e2c";ctx.fillRect(-18,26,36,4);
+    ctx.fillStyle=kind.color;ctx.fillRect(-18,26,36*clamp(d.life/9,0,1),4);
+    ctx.restore();
+  }
+  if(!state.waveActive&&state.nextWaveIn>0&&state.mode==="game"){
+    ctx.save();
+    ctx.fillStyle="#07131fdc";ctx.strokeStyle="#c9fb7a77";
+    roundRect(266,16,268,37,7,"#07131fe8","#d6fa7059");
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font="900 16px 'Barlow Condensed',Impact,sans-serif";ctx.fillStyle="#d6fa70";
+    ctx.fillText("AUTO DEPLOY IN "+Math.ceil(state.nextWaveIn)+"s   •   BUILD NOW",400,34);
+    ctx.restore();
+  }
+}
+
 function update(dt){
   if(!state||state.paused||state.modal)return;
   state.time+=dt;
