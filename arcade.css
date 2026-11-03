@@ -53,3 +53,28 @@
 .contract-copy strong{font-size:16px}
 .contract-progress{font-size:13px}
 }
+
+/* On-field interaction and always-reachable touch armory */
+.aim-overlay{position:absolute;z-index:5;left:12px;top:12px;display:flex;align-items:center;gap:5px;padding:8px 10px;border-radius:6px;background:#0b2435ed;color:#d6fa70;border:1px solid #8dbb7a;box-shadow:0 5px 20px #0008;font-size:10px;font-weight:900;letter-spacing:.5px;line-height:1}
+.aim-overlay:hover,.aim-overlay.active{background:#d6fa70;color:#152a26;border-color:#d6fa70}
+.aim-overlay>span{font-size:16px}
+.mobile-build-dock{display:none}
+@media(max-width:900px){
+  #app:has(.game-screen:not(.hidden)){padding-bottom:84px}
+  .mobile-build-dock{display:flex;align-items:stretch;justify-content:flex-start;gap:7px;position:fixed;bottom:0;left:0;right:0;z-index:30;overflow-x:auto;scrollbar-width:none;padding:7px 12px calc(8px + env(safe-area-inset-bottom));background:#071422f5;box-shadow:0 -8px 35px #000b;border-top:1px solid #467080;backdrop-filter:blur(14px);-webkit-overflow-scrolling:touch}
+  .mobile-build-dock::-webkit-scrollbar{display:none}
+  .quick-tower{min-width:71px;flex:1;max-width:120px;min-height:63px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;border:1px solid #334f63;border-radius:7px;background:#17293a;padding:3px 5px;line-height:1.1}
+  .quick-tower>span{font-size:23px}
+  .quick-tower b{color:#f4d27c;font:900 14px var(--display)}
+  .quick-tower small{color:#90a5b9;font:800 8px var(--font);letter-spacing:.3px;max-width:100%;overflow:hidden}
+  .quick-tower.selected{border-color:#d6fa70;background:#304737;box-shadow:inset 0 0 0 1px #d6fa7077}
+  .quick-tower.unaffordable{opacity:.48}
+  .quick-tower:not(:disabled):active{transform:scale(.95)}
+}
+@media(max-width:600px){
+  .aim-overlay{top:6px;left:6px;padding:6px;gap:3px;font-size:8px;letter-spacing:0}
+  .aim-overlay>span{font-size:12px}
+  .quick-tower{flex:0 0 66px;min-width:66px;max-width:66px}
+  .mobile-build-dock{gap:6px;padding:5px 8px calc(6px + env(safe-area-inset-bottom))}
+  #app:has(.game-screen:not(.hidden)){padding-bottom:88px}
+}
