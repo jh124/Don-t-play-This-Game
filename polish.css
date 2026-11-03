@@ -1,0 +1,78 @@
+
+/* SYSTEM UPDATE 2.0 — Combat command deck */
+:root{--accent:#d6fa70;--hot:#ff7869}
+::selection{background:#bdf779;color:#091526}
+body{background:radial-gradient(ellipse 55% 35% at 74% 4%,#1c3242 0,transparent 80%),radial-gradient(ellipse 60% 60% at 8% 80%,#141b35 0,transparent 100%),#070d1b}
+.site-header{position:relative}
+.site-header:after{content:"";position:absolute;left:0;bottom:-1px;width:110px;height:2px;background:linear-gradient(90deg,#d6fa70,transparent)}
+.brand-mark{filter:drop-shadow(0 3px 14px #d6fa7052)}
+.menu-screen h1{text-shadow:0 7px 35px #0004}
+.menu-copy{padding-top:8px}
+.btn-primary{position:relative;overflow:hidden}
+.btn-primary:after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-130%) skew(-20deg);background:linear-gradient(90deg,transparent,#fff8,transparent);width:65%;transition:transform .55s}
+.btn-primary:hover:after{transform:translateX(230%) skew(-20deg)}
+.map-card,.tower-option,.ability,.small-control{transition:background .16s,border-color .16s,transform .16s,box-shadow .16s}
+.map-card:hover:not(.selected){transform:translateY(-2px)}
+.map-card.selected{box-shadow:inset 0 0 0 1px #54e5f322,0 0 0 2px #54e5f312}
+.field-note{display:flex;align-items:center;gap:11px;max-width:565px;margin:16px 0 4px;padding:12px;background:#152339d4;border:1px dashed #3c546a;border-radius:8px;color:#8ca6bd;font-size:10px;line-height:1.65}
+.field-note-icon{font-size:22px;color:#d6fa70;flex-shrink:0;animation:blinklite 2.7s infinite}
+.field-note b{font-size:9px;color:#d2e6fa;letter-spacing:1.2px;margin-right:5px}
+.field-note strong{color:#d6fa70}
+@keyframes blinklite{50%{opacity:.45}}
+.battle-frame{position:relative}
+.battle-frame:after{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid #6ce8f51b;border-radius:10px}
+.battle-topbar{background:linear-gradient(90deg,#19344b,#16263a)}
+.battle-topbar i{animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{50%{box-shadow:0 0 16px 5px #d6fa705b}}
+.boss-bar{position:absolute;z-index:4;top:13px;left:50%;transform:translateX(-50%);width:min(340px,74%);padding:10px 13px 11px;background:#0b1326ec;border:1px solid #ef6179;border-radius:7px;box-shadow:0 10px 35px #0009,0 0 23px #ff566a25;line-height:1.2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.boss-bar-title{font:900 12px/1.2 var(--display);color:#ff8292;letter-spacing:1.5px}
+.boss-bar-hp{color:#fff0e4;font:900 15px var(--display)}
+.boss-bar-track{height:6px;background:#522e42;flex-basis:100%;border-radius:4px;overflow:hidden}
+.boss-bar-track>div{height:100%;width:100%;background:linear-gradient(90deg,#ff975d,#ff5378);box-shadow:0 0 15px #ff5378;transition:width .13s linear}
+.combat-readout{background:linear-gradient(120deg,#11283b,#0b1b2e);border:1px solid #304860;border-radius:9px;padding:12px 15px 10px;margin-top:13px;position:relative;overflow:hidden}
+.combat-readout:before{content:"";position:absolute;right:0;top:0;border-top:24px solid #d6fa7038;border-left:24px solid transparent}
+.readout-head,.readout-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:9px;letter-spacing:1.35px;font-weight:800;color:#6f91a8}
+.readout-head b{color:#ecf3ff;font:800 18px/1.1 var(--display);display:inline-block;margin-left:8px;letter-spacing:.5px}
+.readout-head>span:last-child{color:#f1c77b;white-space:nowrap}
+.readout-track{height:8px;background:#070e20;margin:11px 0 8px;border:1px solid #2a4660;border-radius:10px;overflow:hidden}
+.readout-fill{height:100%;width:0;background:linear-gradient(90deg,#61dce9,#d6fa70);box-shadow:0 0 14px #57dfe6;transition:width .16s}
+.readout-foot{color:#7590a9;font-size:9px;letter-spacing:.7px}
+.readout-foot .heated{color:#d6fa70;text-shadow:0 0 10px #cfff6077;animation:chain-flash 1s infinite alternate}
+@keyframes chain-flash{from{opacity:.7}to{opacity:1}}
+.bottom-controls{background:linear-gradient(115deg,#182c40,#101b2c);margin-top:10px}
+.abilities-area .section-label{margin-top:23px}
+.ability{position:relative;overflow:hidden}
+.ability:before{position:absolute;content:"";left:0;bottom:0;width:3px;height:100%;background:#53788d;opacity:.5}
+.ability:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 6px 22px #0004}
+.ability-icon{box-shadow:0 0 12px #fff1 inset}
+.ability-cooldown{border:1px solid #81966c40;background:#93e04d17;border-radius:3px;padding:3px 5px}
+.tower-option:hover:not(.selected){transform:translateX(2px)}
+.tower-option.selected{box-shadow:inset 3px 0 var(--lime),0 0 15px #d6fa700c}
+.tower-glyph{position:relative;box-shadow:0 0 10px currentColor inset}
+.tower-details{background:linear-gradient(180deg,#112135,#111b2e)}
+.spec-heading{font-size:10px;color:#d6fa70;letter-spacing:1.15px;font-weight:900;margin:13px 0 7px}
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 14px}
+.spec-grid button{text-align:left;border:1px solid #4a6575;background:#192e3d;padding:10px 8px;border-radius:6px;min-height:100px;transition:all .15s}
+.spec-grid button:not(:disabled):hover{background:#283f43;border-color:#d6fa70;transform:translateY(-2px)}
+.spec-grid b{font:900 15px/1 var(--display);color:#d6fa70;letter-spacing:.2px;display:block}
+.spec-grid small{font:500 9px/1.45 var(--font);color:#a7b6c9;display:block;margin-top:8px}
+.spec-active{color:#d6fa70;border:1px solid #d6fa704e;background:#d6fa7010;padding:8px;border-radius:6px;font-size:9px;font-weight:900;letter-spacing:1.1px;margin:12px 0}
+.details-empty-icon{animation:scan-ring 6s infinite}
+@keyframes scan-ring{50%{transform:rotate(90deg);color:#89dbe1}}
+.modal-panel{border-color:#819a8d;box-shadow:0 25px 110px #000c,0 0 0 1px #d6fa7015}
+.modal-panel:before{position:absolute;content:"";height:4px;left:35px;right:35px;top:0;background:linear-gradient(90deg,#d6fa70,#54e5f3,transparent)}
+.perk-card{position:relative;overflow:hidden}
+.perk-card:after{content:"↗";position:absolute;top:7px;right:9px;color:#d6fa7070;font-size:14px}
+.perk-card:hover{box-shadow:0 14px 34px #0006}
+@media(max-width:600px){
+  .field-note{font-size:9px;padding:10px}
+  .combat-readout{padding:10px 10px 9px}
+  .readout-head b{font-size:15px;display:block;margin-left:0;margin-top:3px}
+  .readout-head,.readout-foot{font-size:8px}
+  .readout-head>span:last-child{font-size:8px;text-align:right}
+  .readout-track{margin:8px 0}
+  .boss-bar{width:min(290px,80%);top:8px;padding:7px 9px}
+  .boss-bar-title{font-size:10px}
+  .ability-cooldown{font-size:8px}
+  .spec-grid button{min-height:90px}
+}
