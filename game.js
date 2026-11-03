@@ -33,7 +33,10 @@ const ENEMIES = {
   splitter: { hp:127, speed:81, reward:19, leak:1, color:"#bb93ff", radius:15, armor:0 },
   mini:     { hp:30, speed:130, reward:4, leak:1, color:"#d7b9ff", radius:8, armor:0 },
   phantom:  { hp:113, speed:139, reward:24, leak:2, color:"#8ae8dd", radius:11, armor:0 },
-  boss:     { hp:960, speed:36, reward:180, leak:6, color:"#ff647c", radius:26, armor:.1 }
+  medic:    { hp:108, speed:79, reward:26, leak:2, color:"#9df6a1", radius:14, armor:0 },
+  jammer:   { hp:150, speed:65, reward:28, leak:2, color:"#ff89d4", radius:16, armor:.05 },
+  carrier:  { hp:330, speed:52, reward:38, leak:3, color:"#ffc08b", radius:20, armor:.12 },
+  boss:     { hp:1120, speed:38, reward:200, leak:7, color:"#ff647c", radius:27, armor:.12, shield:180 }
 };
 
 let best = { wave:0, score:0 };
@@ -82,10 +85,10 @@ function newState(){
   return {
     mapIndex:chosenMap,difficulty:chosenDifficulty,
     path:makePath(chosenMap),mode:"game",wave:0,waveActive:false,endless:false,
-    credits:430,lives:25,maxLives:25,score:0,kills:0,spent:0,
+    credits:430,lives:25,maxLives:25,score:0,kills:0,spent:0,combo:0,comboUntil:0,bestCombo:0,perfectWaves:0,waveStartLives:25,creditedDamage:0,
     towers:[],enemies:[],projectiles:[],particles:[],beams:[],floaters:[],
     spawning:[],spawnElapsed:0,spawnIndex:0,time:0,hudElapsed:0,
-    paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,
+    paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,runSeed:Math.random(),
     targetingStrike:false,overdriveUntil:0,shake:0,
     cooldowns:{overdrive:0,emp:0,strike:0},
     perks:{power:0,rapid:0,range:0,cooldown:0},modal:false
@@ -235,7 +238,7 @@ function placeTower(c,r){
   if(state.credits<def.cost){showToast("NOT ENOUGH CREDITS",true);playSound(160,.08);return false;}
   if(id==="mint"&&state.towers.filter(t=>t.id==="mint").length>=5){showToast("MINE LIMIT: 5",true);return false;}
   const pos=tileCenter(c,r);
-  const t={id,c,r,x:pos.x,y:pos.y,level:1,spent:def.cost,cooldown:rand(0,.12),angle:-Math.PI/2,priority:"first",flash:0};
+  const t={id,c,r,x:pos.x,y:pos.y,level:1,spent:def.cost,cooldown:rand(0,.12),angle:-Math.PI/2,priority:"first",flash:0,specialization:null,jammedUntil:0,kills:0};
   state.towers.push(t);state.credits-=def.cost;state.spent+=def.cost;
   state.selectedTower=t;state.selectedBuild=null;
   spawnBurst(t.x,t.y,def.color,12,85);
@@ -270,35 +273,55 @@ function syncHUD(){
   $("abilityStrike").classList.toggle("selected",state.targetingStrike);
   refreshTowerList();
 }
+
+const WAVE_TITLES=["FIRST CONTACT","RAPID RESPONSE","THE SWARM","HEAVY METAL","THE FIRST TITAN",
+  "SHIELDS UP","BORDER RUNNERS","DIVIDE & CONQUER","MEDICAL CORPS","TITAN RELOADED",
+  "GHOSTS IN THE WIRE","STATIC STORM","FORTRESS BREAKERS","REINFORCEMENTS","SIEGE ENGINE",
+  "TOTAL BLACKOUT","BLITZKRIEG","NO MAN'S LAND","THE LAST STAND","FINAL PROTOCOL"];
+function waveTitle(w){return WAVE_TITLES[(w-1)%20] + (w>20?" / "+Math.ceil(w/20):"");}
 function waveDescription(w){
-  if(w%5===0)return "⚠ A massive boss signature detected";
-  if(w>=11)return "Fast phantoms and armored raiders";
-  if(w>=8)return "Splitters detected in enemy ranks";
-  if(w>=6)return "Shielded units are approaching";
+  if(w%5===0)return "⚠ TITAN CLASS · Boss encounter";
+  if(w>=16)return "Elite jammers and carrier convoys";
+  if(w>=12)return "Electronic warfare units incoming";
+  if(w>=9)return "Support medics behind the front";
+  if(w>=8)return "Splitters and heavy assault";
+  if(w>=6)return "Shielded enemy formation";
   if(w>=4)return "Heavy armor spotted on radar";
   if(w>=3)return "Quick-moving assault units incoming";
   return "Scout drones approaching";
 }
+function seededWaveRandom(w,i){
+  const x=Math.sin(w*124.739+i*71.332+state.mapIndex*88.1+state.difficulty*9.7)*43758.5453;
+  return x-Math.floor(x);
+}
 function wavePlan(w){
-  const plan=[];
-  const count=Math.floor(8+w*2.55);
-  let interval=Math.max(.31,.78-w*.018);
+  const plan=[],count=Math.floor(9+w*2.3),interval=Math.max(.28,.78-w*.017);
+  const groups=["drone"];
+  if(w>=3)groups.push("runner","runner");
+  if(w>=4)groups.push("brute");
+  if(w>=6)groups.push("shield");
+  if(w>=8)groups.push("splitter");
+  if(w>=9)groups.push("medic");
+  if(w>=11)groups.push("phantom");
+  if(w>=12)groups.push("jammer");
+  if(w>=15)groups.push("carrier");
+  const signature=w%5===0?"brute":w%4===0?"runner":w%3===0?"shield":"drone";
   for(let i=0;i<count;i++){
-    let type="drone",v=Math.random();
-    if(w>=11 && v<.14)type="phantom";
-    else if(w>=8 && v<.28)type="splitter";
-    else if(w>=6 && v<.46)type="shield";
-    else if(w>=4 && v<.63)type="brute";
-    else if(w>=3 && v<.83)type="runner";
-    if(i%13===0&&w>=4)type="brute";
+    let type=groups[Math.floor(seededWaveRandom(w,i)*groups.length)];
+    if(i%9===0)type=signature;
+    if(w>=9&&i%16===8)type="medic";
+    if(w>=12&&i%17===3)type="jammer";
+    if(w>=15&&i%19===5)type="carrier";
     plan.push({type,time:i*interval});
   }
-  if(w%5===0)plan.push({type:"boss",time:count*interval+.4});
+  if(w%5===0)plan.push({type:"boss",time:count*interval+1});
   return plan;
 }
 function startWave(){
   if(!state||state.waveActive||state.modal||state.paused)return;
   state.wave++;
+  state.waveStartLives=state.lives;
+  state.combo=0;
   state.spawning=wavePlan(state.wave);
   state.spawnElapsed=0;state.spawnIndex=0;state.waveActive=true;
   state.selectedBuild=null;state.targetingStrike=false;
@@ -320,7 +343,7 @@ function spawnEnemy(type,atDist=-30){
     maxShield:Math.round((def.shield||0)*hpScale*diff),
     speed:def.speed*(1+Math.min(.24,state.wave*.009))*(state.difficulty===2?1.06:1),
     reward:def.reward,leak:def.leak,armor:def.armor||0,r:def.radius,
-    dead:false,slowUntil:0,slowFactor:1,stunUntil:0,hitFlash:0,phase:rand(0,TAU)
+    dead:false,slowUntil:0,slowFactor:1,stunUntil:0,hitFlash:0,phase:rand(0,TAU),burnUntil:0,burnDps:0,brittleUntil:0,healClock:0,jamClock:0,bossClock:0,bossPhase:0
   });
 }
 function spawnBurst(x,y,color,count=10,power=110){
@@ -335,31 +358,101 @@ function floatingDamage(x,y,value,color="#d9ecff"){
   if(!state||state.floaters.length>50)return;
   state.floaters.push({x:x+rand(-8,8),y:y-13,text:String(Math.round(value)),color,life:.7});
 }
-function damageEnemy(e,damage){
+
+function damageEnemy(e,damage,source=null){
   if(!e||e.dead)return;
-  const actual=Math.max(1,Math.round(damage*(1-e.armor)));
+  let multiplier=1;
+  if(e.brittleUntil>state.time && source!=="cryo")multiplier=1.3;
+  if(e.type==="boss"&&e.hp<e.maxHp*.35)multiplier*=.88;
+  const armor=source==="rail"?e.armor*.25:e.armor;
+  const actual=Math.max(1,Math.round(damage*multiplier*(1-armor)));
   let left=actual;
   if(e.shield>0){const absorbed=Math.min(e.shield,left);e.shield-=absorbed;left-=absorbed;}
-  e.hp-=left;e.hitFlash=.08;
-  if(Math.random()<.3)floatingDamage(e.x,e.y,actual,e.shield>0?"#8be0ff":"#dfefff");
+  e.hp-=left;e.hitFlash=.09;
+  state.creditedDamage+=actual;
+  if(Math.random()<.28)floatingDamage(e.x,e.y,actual,e.shield>0?"#8be0ff":multiplier>1?"#d6fa70":"#dfefff");
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
   if(e.dead)return;
-  e.dead=true;state.credits+=e.reward;state.score+=e.reward*10;state.kills++;
-  spawnBurst(e.x,e.y,ENEMIES[e.type].color,e.type==="boss"?55:10,e.type==="boss"?240:100);
-  if(e.type==="boss"){state.shake=16;playSound(110,.4,"sawtooth",.07);showToast("BOSS ELIMINATED +"+e.reward+"¢");}
-  else if(e.type==="brute")playSound(170,.07,"triangle",.02);
-  if(e.type==="splitter"){
-    for(let i=0;i<2;i++)spawnEnemy("mini",e.dist-rand(1,22));
+  e.dead=true;
+  const chain=state.time<state.comboUntil;
+  state.combo=chain?Math.min(99,state.combo+1):1;
+  state.comboUntil=state.time+2.7;
+  state.bestCombo=Math.max(state.bestCombo,state.combo);
+  state.credits+=e.reward;
+  const mult=1+Math.min(4,Math.floor(state.combo/5)*.5);
+  state.score+=Math.round(e.reward*10*mult);state.kills++;
+  if(state.combo===5||state.combo===10||state.combo===20||state.combo===35){
+    showToast(state.combo+"× KILL CHAIN  ·  SCORE BOOST!");
+    playSound(980,.13,"triangle",.03);
+  }
+  spawnBurst(e.x,e.y,ENEMIES[e.type].color,e.type==="boss"?60:12,e.type==="boss"?255:115);
+  if(e.type==="boss"){
+    state.shake=19;playSound(110,.4,"sawtooth",.07);
+    showToast("TITAN DOWN! +"+e.reward+"¢");
+  }else if(e.type==="brute")playSound(170,.07,"triangle",.02);
+  if(e.type==="splitter"||e.type==="carrier"){
+    const amount=e.type==="carrier"?5:2,type=e.type==="carrier"?"runner":"mini";
+    for(let i=0;i<amount;i++)spawnEnemy(type,e.dist-rand(3,45));
   }
 }
 function enemyLeak(e){
-  e.dead=true;state.lives-=e.leak;state.shake=Math.min(20,state.shake+8);
+  e.dead=true;state.combo=0;state.lives-=e.leak;state.shake=Math.min(20,state.shake+8);
   spawnBurst(785,e.y,"#ff697f",22,140);
   playSound(115,.2,"sawtooth",.05);
   if(state.lives<=0){state.lives=0;finishGame(false);}
 }
+function updateEnemyAbilities(e,dt){
+  if(e.burnUntil>state.time&&e.burnDps>0){
+    e.burnTick=(e.burnTick||0)+dt;
+    if(e.burnTick>.24){damageEnemy(e,e.burnDps*e.burnTick,"burn");e.burnTick=0;}
+  }
+  if(e.dead)return;
+  if(e.type==="medic"){
+    e.healClock+=dt;
+    if(e.healClock>1.6){
+      e.healClock=0;
+      const squad=state.enemies.filter(other=>!other.dead&&other!==e&&distance(e,other)<115&&other.hp<other.maxHp);
+      squad.sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
+      for(const ally of squad.slice(0,3)){
+        ally.hp=Math.min(ally.maxHp,ally.hp+ally.maxHp*.17);
+        beamLine(e.x,e.y,ally.x,ally.y,"#9cf9a4",2,.24);
+        spawnBurst(ally.x,ally.y,"#a1ffb0",4,45);
+      }
+    }
+  }
+  if(e.type==="jammer"){
+    e.jamClock+=dt;
+    if(e.jamClock>3.6){
+      e.jamClock=0;
+      const around=state.towers.filter(t=>t.id!=="mint"&&distance(t,e)<155);
+      for(const t of around){
+        t.jammedUntil=Math.max(t.jammedUntil,state.time+1.45);
+        beamLine(e.x,e.y,t.x,t.y,"#ff93d9",1.5,.2);
+      }
+      if(around.length)spawnBurst(e.x,e.y,"#ff80d2",12,80);
+    }
+  }
+  if(e.type==="boss"){
+    e.bossClock+=dt;
+    if(e.bossClock>8.5){
+      e.bossClock=0;state.shake=12;
+      state.enemies.forEach(other=>{if(!other.dead&&other!==e&&distance(e,other)<130)other.shield+=Math.round(other.maxHp*.22);});
+      for(let i=0;i<3+Math.min(4,Math.floor(state.wave/10));i++)spawnEnemy(i%2?"runner":"drone",e.dist-rand(30,110));
+      spawnBurst(e.x,e.y,"#ff738a",36,170);
+      showToast("⚠ TITAN DEPLOYED REINFORCEMENTS");
+      playSound(135,.3,"sawtooth",.05);
+    }
+    if(e.bossPhase===0&&e.hp<e.maxHp*.5){
+      e.bossPhase=1;e.shield+=Math.round(e.maxHp*.28);
+      e.speed*=1.35;state.shake=15;
+      spawnBurst(e.x,e.y,"#ffcf81",48,210);
+      showToast("⚠ TITAN ENRAGED · SHIELD RESTORED");
+    }
+  }
+}
+
 function findTarget(t,range){
   const options=state.enemies.filter(e=>!e.dead&&distance(t,e)<=range);
   if(!options.length)return null;
