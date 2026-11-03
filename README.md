@@ -1,74 +1,99 @@
 # DON'T PLAY THIS GAME
+> A neon-drenched, single-player sci-fi tower defense game. **You were warned.**
 
-**You were warned.** A fast, neon-drenched, single-player sci-fi tower defense game made for browsers. Everything runs on the client—no account, server, build system, or dependencies required for the game itself.
+**[Launch the game](https://jh124.github.io/Don-t-play-This-Game/)** · [GitHub Pages setup](#deploying)
 
-## Play
+## Version 2 — Command Deck
 
-**Once GitHub Pages is enabled:** https://jh124.github.io/Don-t-play-This-Game/
+Built to be playable with touch or mouse, no server or build process necessary. The entire game is HTML, CSS, and a Canvas 2D combat simulation.
 
-To enable the website for the first time:
+### Campaign
 
-1. Open this repo's **Settings → Pages**.
-2. Under **Build and deployment**, choose **GitHub Actions** as the source.
-3. Open **Actions → Deploy tower defense game** and run the workflow if it hasn't run automatically.
-4. Open the Pages URL shown in your deployment. Subsequent pushes to main deploy automatically.
+Survive **20 authored assault waves**, with a **multi-phase Titan boss every fifth wave**. On victory you can continue into infinitely scaling **endless mode**. Each map has a different path and **three power-pad positions** that reward good tower placement.
 
-Alternatively, download the repository and open index.html in your browser. (The optional Google Fonts will fall back gracefully if you're offline.)
+- **Neon Crossing:** winding industrial routes.
+- **Redline Canyon:** long sight lines and sharp turns.
+- **Ghost Circuit:** tight reactor corridors.
 
-## Your mission
+Difficulty: **Normal**, **Hard**, or **Insane**.
 
-Protect your reactor through **20 increasingly difficult waves**, including a boss every five waves. Beating wave 20 unlocks **endless mode**. Earn credits for defeating enemies and completing waves. Between boss waves, choose a permanent research upgrade.
+### 6 towers, 12 specializations
 
-### Maps
+| Tower | Cost | Playstyle | Level-3 tech branch choices |
+|---|---:|---|---|
+| Pulse Cannon | 85¢ | Fast single-target fire | **Target Lock** (ramping focus) / **Ricochet** (bouncing shots) |
+| Rail Driver | 180¢ | Piercing beams, armor control | **Titan Breaker** (boss / armor damage) / **Hyper Rail** (more pierce and range) |
+| Cryo Emitter | 145¢ | Crowd control | **Absolute Zero** (extreme slow) / **Shatter Point** (makes targets vulnerable to allies) |
+| Nova Mortar | 215¢ | Explosions and packed groups | **Napalm Round** (damage over time) / **Cluster Bomb** (extra splash radius) |
+| Arc Tesla | 265¢ | Chaining lightning | **Overcharge** (shield / boss damage) / **Chain Reaction** (more chain targets) |
+| Credit Mine | 155¢ | Economic investment (max 5) | **Compound Yield** (more credits) / **Tactical Relay** (buffs nearby fire rate) |
 
-- **Neon Crossing** — winding industrial lanes.
-- **Redline Canyon** — long, sharp turns.
-- **Ghost Circuit** — twisted corridors.
+All towers reach **level 4**. At level 2, the next upgrade asks you to choose **one** of two mutually exclusive specializations.
 
-Choose **Normal**, **Hard**, or **Insane** before starting.
+Build towers off the road, upgrade them, set target priority (**First, Strong, Last**), and sell them for a 70% credit refund.
 
-### Towers
+### Power pads
 
-| Tower | Cost | Specialty |
-|---|---:|---|
-| Pulse Cannon | 85 | Fast and affordable single-target damage |
-| Rail Driver | 180 | Long-range piercing beam |
-| Cryo Emitter | 145 | Slows fast enemies |
-| Nova Mortar | 215 | Area damage against dense groups |
-| Arc Tesla | 265 | Chaining lightning |
-| Credit Mine | 155 | Passive income each completed wave (max 5) |
+Three glowing power pads are located off-road on each map. A tower built directly on one gets a passive boost:
 
-Select a tower in the armory, then click or tap an open tile to build. Tap a built tower to **upgrade it (up to level 4)**, change target priority (**First / Strong / Last**), or sell it for 70% of invested credits. You cannot build on the enemy path.
+- **Longshot (cyan):** +22% attack range.
+- **Quickfire (purple):** +18% fire rate.
+- **Warhead (amber):** +22% damage.
+
+### Threat roster
+
+Enemy units include light drones, fast runners, armored brutes, shielders, splitters, phantoms, medics that heal their squad, **jammers** that temporarily disable turrets, and **carriers** that spill reinforcements when destroyed. Titans summon reinforcements, shield allies, and enter an enraged phase below half health.
 
 ### Tactical abilities
 
-- **Overdrive** — all towers fire twice as fast for 8 seconds.
-- **EMP Blast** — freeze all currently deployed enemies for 3 seconds.
-- **Orbital Strike** — select a target location for heavy area damage.
+- **Q — Overdrive:** double tower fire rate for 8 seconds.
+- **E — EMP Blast:** freeze currently deployed enemies for 3 seconds.
+- **R — Orbital Strike:** choose a point to deal heavy area damage.
 
-Each ability has a cooldown. Use them at the right time.
+The abilities have independent cooldowns, which can be shortened with research.
+
+### Score, bonuses, and long-term challenges
+
+- Earn credits from kills, wave completions, and Credit Mines.
+- Maintain quick kill streaks to raise score multipliers.
+- Clear a wave without a single reactor hit to earn a **Perfect Defense** payout.
+- Earn a permanent research choice after waves 5, 10, and 15; after 20, endless mode grants further research.
+- Your mission debrief includes a performance grade, kills, score, perfect waves, and longest kill chain.
+- **Eight persistent accolades** give you additional goals on repeat runs. Open Mission Accolades from the main menu.
+- Personal best wave, score, accolades, and sound preference are saved to localStorage on the current browser/device.
 
 ### Controls
 
-- **Mouse/touch:** select towers, place on grid, select existing towers.
-- **1–6:** select a tower type.
-- **Space:** pause/resume.
-- **F:** cycle 1×, 2×, 3× speed.
-- **Enter:** start the next wave.
-- **Esc:** cancel build or orbital strike targeting.
+| Action | PC / keyboard | Touch |
+|---|---|---|
+| Place a tower | Click tower then click open cell; hotkeys **1–6** | Tap tower then tap an open cell |
+| Inspect or upgrade | Click placed tower | Tap placed tower |
+| Pause | **Space** | Pause button |
+| Change speed | **F** | 1× / 2× / 3× toggle |
+| Start next wave | **Enter** | Start Wave button |
+| Abilities | **Q**, **E**, **R**, then aim orbital strike | Tap ability; tap to aim orbital strike |
+| Cancel build / targeting | **Esc** | Tap selected unit again / another tower |
 
-The layout is responsive and supports iPhone and iPad; landscape orientation gives you a larger battlefield on smaller phones.
+**On iPhone:** Rotate to landscape for a larger game field. The interface reflows for portrait too.
 
-## About the code
+## Deploying
 
-- index.html — UI structure.
-- styles.css — interface, effects, and responsive layouts.
-- game.js — canvas renderer, combat simulation, enemies, tower mechanics, upgrades, cooldowns and menu interactions.
-- icon.svg — warning-symbol favicon.
-- .github/workflows/deploy.yml — static GitHub Pages deployment workflow.
+GitHub Pages is supported by the workflow in the .github/workflows/deploy.yml file.
 
-Personal best wave and score, along with sound preference, are stored locally in the browser via localStorage. There are no trackers, ads, in-app purchases, or outside game libraries.
+1. Open **Settings → Pages** in this repository.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. If the deploy hasn't run, open **Actions → Deploy tower defense game** and trigger it once.
+4. Your game's address is https://jh124.github.io/Don-t-play-This-Game/.
 
-## Credits
+Automatic deployments run on every push to the main branch. You can also download the repository and open index.html directly.
 
-Original game developed for the Don't Play This Game repository. Not affiliated with Bloons TD or Star Wars.
+## Source layout
+
+- index.html: game menu, canvas battlefield, status HUD, armory, and dialogs
+- styles.css: original responsive game layout
+- polish.css: expanded HUD, tech branches, performance grades, and visual polish
+- game.js: engine, waves, enemies, upgrades, animations, achievements, and input
+- icon.svg: game favicon
+- .github/workflows/deploy.yml: GitHub Pages deployment
+
+No ads, purchase mechanics, account requirements, third-party game libraries, or back-end. The display font is loaded from Google Fonts when available; fallback fonts work offline. The game is an original work and is not affiliated with Bloons TD or Star Wars.
