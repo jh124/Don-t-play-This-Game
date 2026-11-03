@@ -1,0 +1,39 @@
+
+/* V3: Arcade Assault — actively playable combat */
+.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:565px}
+.mode-card{position:relative;text-align:left;padding:15px 12px 12px;border-radius:9px;background:#101c2e;border:1px solid #2f415b;display:flex;flex-direction:column;gap:5px;min-height:124px}
+.mode-card b{font:900 21px/1 var(--display);letter-spacing:.3px;color:#c8d7e8}
+.mode-card small{font:500 10px/1.4 var(--font);color:#88a1ba;flex:1}
+.mode-card>span{font-size:9px;letter-spacing:1px;font-weight:900;color:#8196aa}
+.mode-card.active{border-color:var(--lime);background:linear-gradient(125deg,#263c39,#172735);box-shadow:inset 3px 0 var(--lime),0 0 20px #d6fa700e}
+.mode-card.active b{color:var(--lime)}
+.mode-card.active>span{color:var(--lime)}
+.mode-card:hover{border-color:#9ab8ae}
+.gun-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.85fr);gap:12px;align-items:stretch;margin-top:13px}
+.gun-toggle{display:flex;gap:12px;align-items:center;min-width:0;text-align:left;padding:13px 15px;border:1px solid #486d77;background:linear-gradient(120deg,#1a3343,#152939);border-radius:9px;transition:.15s}
+.gun-toggle:hover{background:#224351;border-color:var(--cyan)}
+.gun-toggle.active{background:linear-gradient(100deg,#354e36,#1f3837);border-color:#d6fa70;box-shadow:0 0 22px #d6fa7020,inset 3px 0 #d6fa70}
+.gun-toggle .gun-icon{flex:none;display:grid;place-items:center;width:44px;height:44px;background:#0c2534;border:1px solid #649daf;color:var(--cyan);font:900 31px var(--display);border-radius:7px}
+.gun-toggle.active .gun-icon{background:#d6fa70;color:#233b2b;border-color:#d6fa70}
+.gun-toggle>span:nth-child(2){display:flex;flex-direction:column;flex:1;min-width:0}
+.gun-toggle strong{font:900 21px/1.1 var(--display);letter-spacing:.5px;color:#d7e9ff}
+.gun-toggle.active strong{color:#d6fa70}
+.gun-toggle small{font:500 10px/1.35 var(--font);color:#829db4;margin-top:5px}
+.gun-toggle>b{font:900 12px var(--font);border:1px solid #66859a;border-radius:4px;min-width:25px;text-align:center;color:#a8d4dc;padding:4px}
+.gun-meter{background:#111d2f;border:1px solid #31465d;border-radius:9px;padding:13px 15px;display:flex;flex-direction:column;justify-content:center;gap:9px}
+.gun-meter-header{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:1px;font-weight:900;color:#9bb3c8}
+.gun-meter-header>b{font:900 17px var(--display);color:#d6fa70}
+.gun-meter-track{background:#081321;border:1px solid #3b5266;height:11px;border-radius:5px;overflow:hidden}
+.gun-meter-track>div{width:0;height:100%;border-radius:4px;background:linear-gradient(90deg,#60ddf1,#d6fa70);box-shadow:0 0 14px #86ffd055;transition:width .08s linear}
+.gun-meter-track>div.hot{background:linear-gradient(90deg,#f5af4d,#ff566e);box-shadow:0 0 18px #ff566e88}
+.gun-meter small{color:#778fa7;font-size:9px;font-weight:800;letter-spacing:.6px}
+.drop-hint{position:absolute;right:14px;top:13px;pointer-events:none;border:1px solid #4c685a;background:#0f241fbd;color:#c7f7b8;padding:6px 9px;font-size:8px;font-weight:900;letter-spacing:1px;border-radius:4px;line-height:1.3}
+.canvas-container:has(+.nonsense){}.gun-toggle.active ~ .canvas-container{cursor:crosshair}
+@media(max-width:900px){.gun-panel{grid-template-columns:1fr minmax(155px,.8fr)}}
+@media(max-width:600px){
+.mode-options{gap:6px}.mode-card{padding:12px 8px;min-height:125px}.mode-card b{font-size:17px}.mode-card small{font-size:9px}
+.gun-panel{grid-template-columns:1fr;gap:7px}
+.gun-toggle{padding:9px 10px}.gun-toggle .gun-icon{width:36px;height:36px;font-size:25px}.gun-toggle strong{font-size:19px}.gun-toggle small{font-size:9px}
+.gun-meter{padding:8px 10px;gap:5px}.gun-meter-header{font-size:9px}.gun-meter-track{height:8px}.gun-meter small{font-size:8px}
+.drop-hint{font-size:6px;padding:4px 5px;right:6px;top:6px;max-width:155px;text-align:right}
+}
