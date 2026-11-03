@@ -131,7 +131,7 @@ function newState(){
     spawning:[],spawnElapsed:0,spawnIndex:0,time:0,hudElapsed:0,
     paused:false,speed:1,selectedBuild:null,selectedTower:null,hover:null,runSeed:Math.random(),nextWaveIn:chosenMode==="arcade"?10:0,
     targetingStrike:false,overdriveUntil:0,shake:0,
-    gun:{active:false,down:false,aim:{x:400,y:250},heat:0,overheated:false,cooldown:0,hits:0,shots:0},contract:null,
+    gun:{active:false,down:false,aim:{x:400,y:250},heat:0,overheated:false,cooldown:0,hits:0,shots:0,streak:0},contract:null,
     cooldowns:{overdrive:0,emp:0,strike:0},
     perks:{power:0,rapid:0,range:0,cooldown:0},modal:false
   };
@@ -415,7 +415,7 @@ function syncHUD(){
   $("heatFill").style.width=Math.round(state.gun.heat*100)+"%";
   $("heatFill").classList.toggle("hot",state.gun.heat>.75);
   $("heatValue").textContent=Math.round(state.gun.heat*100)+"%";
-  $("gunStatus").textContent=state.gun.overheated?"⚠ OVERHEATED · COOLING...":state.gun.active?"HOLD + DRAG TO SHOOT · RELEASE TO COOL":"BUILD TOWERS FIRST, THEN TAKE CONTROL";
+  $("gunStatus").textContent=state.gun.overheated?"⚠ OVERHEATED · COOLING...":state.gun.active?(state.gun.streak>=3?"✦ PRECISION STREAK ×"+state.gun.streak+" · KEEP AIMING":"HOLD + DRAG TO SHOOT · RELEASE TO COOL"):"BUILD TOWERS FIRST, THEN TAKE CONTROL";
   const buttons=[
     ["abilityOverdrive","overdrive","cdOverdrive"],
     ["abilityEmp","emp","cdEmp"],
@@ -844,23 +844,24 @@ function shootGun(){
   const g=state.gun;
   if(!g.active||g.overheated||g.cooldown>0)return;
   g.cooldown=.19;
-  g.heat=clamp(g.heat+.105,0,1);
+  g.heat=clamp(g.heat+.08,0,1);
   g.shots++;
   const aim=g.aim;
   const target=state.enemies.filter(e=>!e.dead)
     .sort((a,b)=>Math.hypot(a.x-aim.x,a.y-aim.y)-Math.hypot(b.x-aim.x,b.y-aim.y))[0];
   const within=target?Math.hypot(target.x-aim.x,target.y-aim.y):Infinity;
   const hit=within<59+(target?.r||0)*.4;
+  g.streak=hit?Math.min(g.streak+1,30):0;
   const impact=hit?target:aim;
   beamLine(29,470,impact.x,impact.y,hit?"#d6fa70":"#4d97ad",3.6,.095);
   spawnBurst(impact.x,impact.y,hit?"#d6fa70":"#4c87aa",hit?8:3,hit?82:36);
   if(hit){
     const center=within<target.r+8;
-    const damage=(36+state.wave*4)*(center?1.8:1);
+    const damage=(36+state.wave*4)*(center?1.8:1)*(1+Math.min(.65,g.streak*.055));
     damageEnemy(target,damage,"gun");
     progressContract("manual",1);
     if(target.type==="boss")progressContract("boss",1);
-    if(center)state.score+=18;
+    if(center){state.score+=18;g.heat=Math.max(0,g.heat-.035);}
     g.hits++;
     if(center)state.floaters.push({x:target.x,y:target.y-22,text:"CRIT!",color:"#d6fa70",life:.7});
   }
@@ -875,7 +876,7 @@ function shootGun(){
 function updateGun(dt){
   const g=state.gun;
   g.cooldown=Math.max(0,g.cooldown-dt);
-  const cooling=(g.down&&!g.overheated)? .045 : .17;
+  const cooling=(g.down&&!g.overheated)? .09 : .44;
   g.heat=Math.max(0,g.heat-cooling*dt);
   if(g.overheated&&g.heat<=.24)g.overheated=false;
   if(g.active&&g.down&&!g.overheated)shootGun();
@@ -897,7 +898,7 @@ function drawArcade(){
   const aim=g.aim;
   if(g.active){
     ctx.save();ctx.translate(aim.x,aim.y);
-    ctx.strokeStyle=g.overheated?"#ff657e":"#d6fa70";
+    ctx.strokeStyle=g.overheated?"#ff657e":g.streak>=5?"#ffffff":"#d6fa70";
     ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=12;ctx.lineWidth=2;
     const radius=17+Math.sin(ambientTime*7)*1.4;
     ctx.beginPath();ctx.arc(0,0,radius,.2,1.37);ctx.arc(0,0,radius,1.76,2.94);ctx.arc(0,0,radius,3.35,4.52);ctx.arc(0,0,radius,4.91,6.09);ctx.stroke();
