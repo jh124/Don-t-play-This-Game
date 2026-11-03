@@ -378,7 +378,7 @@ function syncHUD(){
   $("creditsValue").textContent=money(state.credits);
   $("livesValue").innerHTML=Math.max(0,state.lives)+' <span class="stat-suffix">HP</span>';
   $("livesValue").style.color=state.lives<=8?"#ff7185":"";
-  $("waveValue").innerHTML=state.wave+' <span class="stat-suffix">/ '+(state.endless?"∞":MAX_WAVE)+'</span>';
+  $("waveValue").innerHTML=state.wave+' <span class="stat-suffix">/ '+(state.endless?"∞":campaignLength())+'</span>';
   $("scoreValue").textContent=money(state.score);
   const planned=state.spawning.length;
   const left=state.enemies.length+planned-state.spawnIndex;
@@ -401,7 +401,15 @@ function syncHUD(){
   $("waveTag").textContent=state.waveActive?"NOW DEFENDING / WAVE "+String(state.wave).padStart(2,"0"):"NEXT UP / WAVE "+String(state.wave+1).padStart(2,"0");
   $("waveDescription").textContent=state.waveActive?"Hold the line. Don't let them through.":waveDescription(state.wave+1);
   $("waveButton").disabled=state.waveActive||state.modal||state.paused;
-  $("waveButton").textContent=state.waveActive?"◉ WAVE IN PROGRESS":"▶ START WAVE "+String(state.wave+1).padStart(2,"0");
+  $("waveButton").textContent=state.waveActive?"◉ WAVE IN PROGRESS":isArcade()?"▶ DEPLOY NOW · +"+(10+Math.ceil(Math.max(0,state.nextWaveIn)*3))+"¢":"▶ START WAVE "+String(state.wave+1).padStart(2,"0");
+  if(!state.waveActive&&isArcade())$("battleStatus").textContent="AUTO-DEPLOY IN "+Math.ceil(state.nextWaveIn)+"s";
+  $("gunButton").classList.toggle("active",state.gun.active);
+  $("gunButton").setAttribute("aria-pressed",String(state.gun.active));
+  $("gunButton").querySelector("strong").textContent=state.gun.active?"MANUAL CANNON ONLINE":"TAKE DIRECT CONTROL";
+  $("heatFill").style.width=Math.round(state.gun.heat*100)+"%";
+  $("heatFill").classList.toggle("hot",state.gun.heat>.75);
+  $("heatValue").textContent=Math.round(state.gun.heat*100)+"%";
+  $("gunStatus").textContent=state.gun.overheated?"⚠ OVERHEATED · COOLING...":state.gun.active?"HOLD + DRAG TO SHOOT · RELEASE TO COOL":"BUILD TOWERS FIRST, THEN TAKE CONTROL";
   const buttons=[
     ["abilityOverdrive","overdrive","cdOverdrive"],
     ["abilityEmp","emp","cdEmp"],
@@ -422,6 +430,7 @@ const WAVE_TITLES=["FIRST CONTACT","RAPID RESPONSE","THE SWARM","HEAVY METAL","T
   "TOTAL BLACKOUT","BLITZKRIEG","NO MAN'S LAND","THE LAST STAND","FINAL PROTOCOL"];
 function waveTitle(w){return WAVE_TITLES[(w-1)%20] + (w>20?" / "+Math.ceil(w/20):"");}
 function waveDescription(w){
+  if(bossWave(w))return "⚠ TITAN · prioritize boss damage";
   if(w%5===0)return "⚠ TITAN CLASS · Boss encounter";
   if(w>=16)return "Elite jammers and carrier convoys";
   if(w>=12)return "Electronic warfare units incoming";
@@ -437,6 +446,27 @@ function seededWaveRandom(w,i){
   return x-Math.floor(x);
 }
 function wavePlan(w){
+  if(isArcade()){
+    const plan=[],count=8+Math.floor(w*1.9);
+    const interval=Math.max(.22,.38-w*.006);
+    const groups=["drone","runner"];
+    if(w>=2)groups.push("runner","runner");
+    if(w>=3)groups.push("brute");
+    if(w>=4)groups.push("shield");
+    if(w>=5)groups.push("splitter");
+    if(w>=6)groups.push("medic");
+    if(w>=7)groups.push("phantom");
+    if(w>=8)groups.push("jammer");
+    if(w>=9)groups.push("carrier");
+    for(let i=0;i<count;i++){
+      let type=groups[Math.floor(seededWaveRandom(w,i)*groups.length)];
+      if(w>=4&&i%9===0)type="brute";
+      if(w>=8&&i%13===8)type="jammer";
+      plan.push({type,time:i*interval});
+    }
+    if(bossWave(w))plan.push({type:"boss",time:count*interval+.55});
+    return plan;
+  }
   const plan=[],count=Math.floor(9+w*2.3),interval=Math.max(.28,.78-w*.017);
   const groups=["drone"];
   if(w>=3)groups.push("runner","runner");
