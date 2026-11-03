@@ -37,3 +37,19 @@
 .gun-meter{padding:8px 10px;gap:5px}.gun-meter-header{font-size:9px}.gun-meter-track{height:8px}.gun-meter small{font-size:8px}
 .drop-hint{font-size:6px;padding:4px 5px;right:6px;top:6px;max-width:155px;text-align:right}
 }
+
+.contract-panel{display:flex;align-items:center;gap:12px;padding:10px 15px;margin-top:11px;background:linear-gradient(90deg,#242f31,#13273a);border:1px solid #5c745a;border-radius:9px;min-height:64px}
+.contract-panel.complete{border-color:#badf7b;background:linear-gradient(90deg,#314233,#152c36)}
+.contract-icon{font-size:29px;color:#d6fa70;line-height:1}
+.contract-copy{display:flex;flex:1;flex-direction:column;min-width:0}
+.contract-copy small{font-size:8px;letter-spacing:1.5px;color:#98b6a4;font-weight:900}
+.contract-copy strong{font:900 20px/1.2 var(--display);color:#e5eddd;letter-spacing:.2px;margin-top:3px}
+.contract-progress{font:900 15px var(--display);color:#d6fa70;white-space:nowrap}
+.contract-panel.complete .contract-progress{font-size:18px}
+@media(max-width:600px){
+.contract-panel{padding:9px 10px;gap:8px;min-height:56px}
+.contract-icon{font-size:23px}
+.contract-copy small{font-size:7px;letter-spacing:.7px}
+.contract-copy strong{font-size:16px}
+.contract-progress{font-size:13px}
+}
