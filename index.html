@@ -34,6 +34,11 @@
             <span class="tiny-caveat">FREE TO PLAY. EXPENSIVE IN FREE TIME.</span>
           </div>
           <div class="menu-divider"></div>
+          <div class="setup-heading"><span>00 / CHOOSE YOUR EXPERIENCE</span><span>NEW</span></div>
+          <div id="modeOptions" class="mode-options" role="group" aria-label="Game mode">
+            <button class="mode-card active" type="button" data-mode="arcade"><b>⚡ ARCADE ASSAULT</b><small>12 intense waves · rapid deployment · a gun you control · auto waves</small><span>RECOMMENDED</span></button>
+            <button class="mode-card" type="button" data-mode="classic"><b>◈ CLASSIC DEFENSE</b><small>20 waves · build at your pace · all the original strategy</small><span>ORIGINAL MODE</span></button>
+          </div>
           <div class="setup-heading"><span>01 / CHOOSE YOUR BATTLEFIELD</span><span>3 SECTORS</span></div>
           <div id="mapCards" class="map-cards" role="group" aria-label="Choose a map">
             <button class="map-card selected" data-map="0" type="button"><span class="map-symbol">◈</span><span><b>NEON CROSSING</b><small>Winding industrial lanes</small></span></button>
@@ -85,6 +90,7 @@
                 <div id="bossBar" class="boss-bar hidden" aria-live="off"><span class="boss-bar-title">⚠ TITAN CLASS DETECTED</span><span class="boss-bar-hp" id="bossHealthText">100%</span><div class="boss-bar-track"><div id="bossHealthFill"></div></div></div>
                 <div id="canvasHint" class="canvas-hint">SELECT A TOWER, THEN TAP AN OPEN TILE</div>
                 <div id="floatingMessage" class="floating-message"></div>
+                <div id="dropHint" class="drop-hint">✦ TAP GLOWING SUPPLY DROPS FOR BONUSES</div>
               </div>
               <div class="battle-footer"><span>◈ <span id="footerMap">NEON CROSSING</span></span><span id="waveProgress">READY FOR WAVE 01</span><span>DEFEND THE CORE ◆</span></div>
             </div>
@@ -93,7 +99,11 @@
             <div class="readout-track"><div id="waveMeterFill" class="readout-fill"></div></div>
             <div class="readout-foot"><span id="enemyIntel">SCOUT DRONES · LIGHT ARMOR</span><span id="comboIntel">CHAIN ×0</span></div>
           </div>
-          <div class="bottom-controls">
+          <div class="gun-panel" id="gunPanel">
+              <button class="gun-toggle" type="button" id="gunButton" aria-pressed="false"><span class="gun-icon">⌖</span><span><strong>TAKE DIRECT CONTROL</strong><small>Hold and drag on the battlefield to shoot enemies</small></span><b id="gunKey">D</b></button>
+              <div class="gun-meter"><div class="gun-meter-header"><span>RAILGUN HEAT</span><b id="heatValue">0%</b></div><div class="gun-meter-track"><div id="heatFill"></div></div><small id="gunStatus">OFFLINE · MANUAL TARGETING DISABLED</small></div>
+            </div>
+            <div class="bottom-controls">
               <div class="wave-callout"><span id="waveTag">NEXT UP / WAVE 01</span><strong id="waveDescription">Scout drones approaching</strong></div>
               <button id="waveButton" class="btn btn-primary wave-button" type="button">▶ START WAVE 01</button>
             </div>
